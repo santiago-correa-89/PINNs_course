@@ -1,0 +1,17 @@
+models/*
+
+figures/monitor/*
+figures/wf_slices
+
+
+.venv*
+
+*pyc
+*swp
+
+dvc-remote-data*
+*notes.md
+
+# Exceptions
+!figures/monitor/.gitkeep
+!models/.gitkeep
