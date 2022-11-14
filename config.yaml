@@ -1,0 +1,12 @@
+data:
+
+
+models:
+
+
+train:
+  lr: 1.0e-4
+  num_epochs: 100
+  batch_size: 8
+  multibatch: True
+  num_workers: 8 # number of processes that gen batches in parallel
