@@ -3,6 +3,7 @@ models/*
 figures/monitor/*
 figures/wf_slices
 
+.DS_store
 
 .venv*
 
