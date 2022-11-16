@@ -16,3 +16,4 @@ dvc-remote-data*
 # Exceptions
 !figures/monitor/.gitkeep
 !models/.gitkeep
+Curso/6/Jupyter scripts - Day 6/burgers_data_R10.mat
