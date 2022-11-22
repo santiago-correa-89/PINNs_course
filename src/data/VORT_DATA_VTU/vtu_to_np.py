@@ -1,10 +1,11 @@
 import vtk
 import numpy as np
+
 from vtk.util.numpy_support import vtk_to_numpy
 import matplotlib.pyplot as plt
 
 #Choose the vtu file
-data ="results/out_cfns_100.vtu"
+data =r"src/data/VORT_DATA_VTU/vort_cyl_2.vtu"
 
 # Read the source file.
 reader = vtk.vtkXMLUnstructuredGridReader()
