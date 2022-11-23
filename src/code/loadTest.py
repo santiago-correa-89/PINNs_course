@@ -29,15 +29,15 @@ u = Utot[idxs,:,:]
 np.save(r"src/data/VORT_DATA_VTU/Xdata.npy", x)
 np.save(r"src/data/VORT_DATA_VTU/Udata.npy", u)
 
-#for j in range(201):
-  #heatmap = nonuniform_imshow(x[:,0],x[:,1],u[:,0,j])
-  #img = plt.colorbar(heatmap)
-  #plt.title('Field U (m/s)')
-  #plt.xlabel('coord x')
-  #plt.ylabel('coord y')
-  #plt.savefig(r"src/data/fig/velocidadU/U_" + str(j) + ".png")
-  #plt.ion()
-  #plt.show()
-  #plt.pause(1)
+for j in range(201):
+  heatmap = nonuniform_imshow(x[:,0],x[:,1],u[:,2,j])
+  img = plt.colorbar(heatmap)
+  plt.title('Field P (Pa)')
+  plt.xlabel('coord x')
+  plt.ylabel('coord y')
+  plt.savefig(r"src/data/fig/Presion/P_" + str(j) + ".png")
+  plt.ion()
+  plt.show()
+  plt.pause(1)
 
 
