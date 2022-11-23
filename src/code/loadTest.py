@@ -1,42 +1,43 @@
+import cv2
+import glob
 import numpy as np
 import pandas as pd
-from scipy import interpolate
+from scipy.interpolate import griddata
 import matplotlib.pyplot as plt
 
 def nonuniform_imshow(x, y, z, aspect=1, cmap=plt.cm.rainbow):
   # Create regular grid
-  xi, yi = np.linspace(x.min(), x.max(), 200), np.linspace(y.min(), y.max(), 200)
-  Xi, Yi = np.meshgrid(xi, yi)
+  xi, yi = np.linspace(x.min(), x.max(), 1000), np.linspace(y.min(), y.max(), 1000)
+  xi, yi = np.meshgrid(xi, yi)
 
   # Interpolate missing data
-  inter = interpolate.interp2d(x, y, z, kind='cubic')
-  zi = inter(Xi, Yi)
+  zi = griddata((x, y), z, (xi, yi), method='linear')
+  # zi = inter2d(xi, yi)
 
-  fig, ax = plt.subplots(figsize=(10, 8))
+  fig, ax = plt.subplots()
 
-  hm = ax.imshow(zi, interpolation='nearest', cmap=cmap,
-                 extent=[x.min(), x.max(), y.max(), y.min()]) 
+  hm = ax.imshow(zi, extent=[x.min(), x.max(), y.max(), y.min()]) 
   
-  ax.scatter(Xi, Yi)
-  ax.set_aspect(aspect)
   return hm
-
-
+  
 Xtot = np.load(r"src/data/VORT_DATA_VTU/Xtot.npy")
 Utot = np.load(r"src/data/VORT_DATA_VTU/Utot.npy")
-
-print("subaracutanga")
 
 x, idxs = np.unique(Xtot, axis=0, return_index = True)
 u = Utot[idxs,:,:]
 
-heatmap = nonuniform_imshow(x[:,0],x[:,1],u[:,0,100])
-plt.colorbar(heatmap)
-plt.show()
-
 np.save(r"src/data/VORT_DATA_VTU/Xdata.npy", x)
 np.save(r"src/data/VORT_DATA_VTU/Udata.npy", u)
 
-#fig, ax = plt.subplots()
-#ax.tricontour(x[:,0],x[:,1],u[:,0,100],levels=20,linewidths=0.5,colors='k')
-#cntr2 = ax.tricontourf(x[:,0],x[:,1],u[:,0,100],levels = 20, cmap="RdBu_r")
+#for j in range(201):
+  #heatmap = nonuniform_imshow(x[:,0],x[:,1],u[:,0,j])
+  #img = plt.colorbar(heatmap)
+  #plt.title('Field U (m/s)')
+  #plt.xlabel('coord x')
+  #plt.ylabel('coord y')
+  #plt.savefig(r"src/data/fig/velocidadU/U_" + str(j) + ".png")
+  #plt.ion()
+  #plt.show()
+  #plt.pause(1)
+
+
