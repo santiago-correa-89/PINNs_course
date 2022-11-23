@@ -12,7 +12,6 @@ def nonuniform_imshow(x, y, z, aspect=1, cmap=plt.cm.rainbow):
 
   # Interpolate missing data
   zi = griddata((x, y), z, (xi, yi), method='linear')
-  # zi = inter2d(xi, yi)
 
   fig, ax = plt.subplots()
 
