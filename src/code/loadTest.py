@@ -1,7 +1,5 @@
 import cv2
-import glob
 import numpy as np
-import pandas as pd
 from scipy.interpolate import griddata
 import matplotlib.pyplot as plt
 
@@ -18,10 +16,12 @@ def nonuniform_imshow(x, y, z, aspect=1, cmap=plt.cm.rainbow):
   hm = ax.imshow(zi, extent=[x.min(), x.max(), y.max(), y.min()]) 
   
   return hm
-  
+
+#Save the entire data from the VTU files.   
 Xtot = np.load(r"src/data/VORT_DATA_VTU/Xtot.npy")
 Utot = np.load(r"src/data/VORT_DATA_VTU/Utot.npy")
 
+#Remove the duplicated points and save the data needed for processing
 x, idxs = np.unique(Xtot, axis=0, return_index = True)
 u = Utot[idxs,:,:]
 

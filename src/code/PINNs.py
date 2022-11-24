@@ -1,14 +1,8 @@
-import sys
-sys.path.insert(0, '/src/VORT_DATA_VTU/') #line to import a file from a local Directory inside the env that executre vtu to np
 import os
 import vtk
-
+import scipy
 from scipy.interpolate import griddata
 from pyDOE import lhs
-
-# Import VTK to Numpy
-import vtk
-from vtk.util.numpy_support import vtk_to_numpy
 
 # Plot commands
 from mpl_toolkits.mplot3d import Axes3D
@@ -18,15 +12,12 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 import tensorflow as tf
 import numpy as np
-
 import pandas as pd
-
 import time
 
 np.random.seed(seed=1234)
 tf.random.set_seed(1234)
 tf.config.experimental.enable_tensor_float_32_execution(False)
-#os.environ[‘TF_ENABLE_AUTO_MIXED_PRECISION’] = ‘1’
 
 # Initalization of Network
 def hyper_initial(size):
@@ -47,40 +38,81 @@ def DNN(X, W, b):
 def train_vars(W, b):
     return W + b
 
-def net_u(x, t, w, b):
-    u = DNN(tf.concat([x,t],1), w, b)
-    return u
+def net_u(x, y, t, w, b):
+    output = DNN(tf.concat([x, y, t],1), w, b)
+    return output
 
-
-#@tf.function(jit_compile=True)
 @tf.function
-def net_f(x,t,W, b, nu):
+def net_f(x, y, t, W, b, I_Re):
     with tf.GradientTape(persistent=True) as tape1:
-        tape1.watch([x, t])
+        tape1.watch([x, y, t])
+        
         with tf.GradientTape(persistent=True) as tape2:
-            tape2.watch([x, t])
-            u=net_u(x,t, W, b)
-        u_t = tape2.gradient(u, t)
+            tape2.watch([x, y, t])
+            
+            with tf.GradientTape(persistent=True) as tape3:
+                tape3.watch([x, y, t])
+                output = net_u(x, y, t, W, b)
+                psi = output[:,0:1]
+                p = output[:,1:2]
+       
+            u = tape3.gradient(psi, y)
+            v = -tape3.gradient(psi, x)
+    
         u_x = tape2.gradient(u, x)
-    u_xx = tape1.gradient(u_x, x)  
+        u_y = tape2.gradient(u, y)
+        u_t = tape2.gradient(u, t)
+        v_x = tape2.gradient(v, x)
+        v_y = tape2.gradient(v, y)
+        v_t = tape2.gradient(v, t)
+        p_x = tape2.gradient(p, x)
+        p_y = tape2.gradient(p, y)    
+    
+    u_xx = tape2.gradient(u_x, x)
+    u_yy = tape2.gradient(u_y, y)
+    v_xx = tape2.gradient(v_x, x)
+    v_yy = tape2.gradient(v_y, y)
+    
     del tape1
-    f = u_t + u*u_x - nu*u_xx
-    return f
-
+    
+    fx = u_t + (u*u_x + v*u_y) + p_x - I_Re*(u_xx + u_yy)
+    fy = v_t + (u*v_x + v*v_y) + p_y - I_Re*(v_xx + v_yy)
+    
+    return fx, fy, u, v, p
 
 
 #@tf.function(jit_compile=True)
 @tf.function
-def train_step(W, b, X_u_train_tf, u_train_tf, X_f_train_tf, opt, nu):
-    x_u = X_u_train_tf[:,0:1]
-    t_u = X_u_train_tf[:,1:2]
-    x_f = X_f_train_tf[:,0:1]
-    t_f = X_f_train_tf[:,1:2]
+def train_step(W, b, X_d_train_tf, uvp_train_tf, X_f_train_tf, opt, I_Re):
+    # Select data for training
+    x_d = X_d_train_tf[:, 0:1]
+    y_d = X_d_train_tf[:, 1:2]
+    t_d = X_d_train_tf[:, 2:3]
+    
+    x_f = X_f_train_tf[:, 0:1]
+    y_f = X_f_train_tf[:, 1:2]
+    t_f = X_f_train_tf[:, 2:3]
+    
     with tf.GradientTape() as tape:
-        tape.watch([W,b])
-        u_nn = net_u(x_u, t_u, W, b) 
-        f_nn = net_f(x_f,t_f, W, b, nu)
-        loss =  tf.reduce_mean(tf.square(u_nn - u_train_tf)) + tf.reduce_mean(tf.square(f_nn)) 
+        tape.watch([W, b])
+        output = net_u(x_d, y_d, t_d, W, b)
+        
+        with tf.GradientTape() as tape1:
+            tape1.watch([x_d, y_d, t_d])
+            output = net_u(x_d, y_d, t_d, W, b)
+            psi = output[:, 0:1]
+            p = output[:, 1:2]
+       
+        u = tape1.gradient(psi, y_d)
+        v = -tape1.gradient(psi, x_d)         
+        
+        fx, fy, _, _, _ = net_f(x_f,y_f, t_f, W, b, I_Re)
+        loss =  tf.reduce_mean(tf.square(u - uvp_train_tf[:,0:1])) 
+        + tf.reduce_mean(tf.square(v - uvp_train_tf[:,1:2])) 
+        + tf.reduce_mean(tf.square(p - uvp_train_tf[:,2:3]))
+        + tf.reduce_mean(tf.square( fx ))
+        + tf.reduce_mean(tf.square( fy ))
+        
     grads = tape.gradient(loss, train_vars(W,b))
     opt.apply_gradients(zip(grads, train_vars(W,b)))
     return loss
@@ -89,18 +121,19 @@ def train_step(W, b, X_u_train_tf, u_train_tf, X_f_train_tf, opt, nu):
 D = 1
 nu = 0.01
 Uinf = 1
-Re = Uinf*D/nu   
+I_Re = nu/(Uinf*D)   
 noise = 0.0        
-N_u = 20
+N_u = 100
 N_f = 10000
-Nmax = 5000
+Niter = 5000
 
-layers = [3, 20, 20, 20, 20, 3]
+layers = [3, 20, 20, 20, 20, 20, 20, 20, 20, 2]
 L = len(layers)
 W = [hyper_initial([layers[l-1], layers[l]]) for l in range(1, L)] 
 b = [tf.Variable(tf.zeros([1, layers[l]])) for l in range(1, L)] 
 
-data = scipy.io.loadmat('./Data/burgers_shock.mat')
+Udata = np.load('/src/code/data/VORT_DATA_VTU/Udata.npy')
+Xdata = np.load('/src/code/data/VORT_DATA_VTU/Xdata.npy')
 
 t = data['t'].flatten()[:,None]
 x = data['x'].flatten()[:,None]
@@ -108,6 +141,7 @@ y = data['x'].flatten()[:,None]
 u = data['x'].flatten()[:,None]
 v = data['x'].flatten()[:,None]
 p = data['x'].flatten()[:,None]
+
 Exact = np.real(data['usol']).T
 X, T = np.meshgrid(x,t)
 X_star = np.hstack((X.flatten()[:,None], T.flatten()[:,None]))
