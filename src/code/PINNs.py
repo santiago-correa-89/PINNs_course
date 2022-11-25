@@ -117,7 +117,7 @@ def train_step(W, b, X_d_train_tf, uvp_train_tf, X_f_train_tf, opt, I_Re):
     opt.apply_gradients(zip(grads, train_vars(W,b)))
     return loss
 
-
+# Defining variables
 D = 1
 nu = 0.01
 Uinf = 1
