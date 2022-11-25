@@ -15,6 +15,11 @@ import numpy as np
 import pandas as pd
 import time
 
+import sys
+# caution: path[0] is reserved for script path (or '' in REPL)
+#sys.path.insert(1, r'src/code')
+from reshapeTest import *
+
 np.random.seed(seed=1234)
 tf.random.set_seed(1234)
 tf.config.experimental.enable_tensor_float_32_execution(False)
@@ -132,8 +137,21 @@ L = len(layers)
 W = [hyper_initial([layers[l-1], layers[l]]) for l in range(1, L)] 
 b = [tf.Variable(tf.zeros([1, layers[l]])) for l in range(1, L)] 
 
-Udata = np.load('/src/code/data/VORT_DATA_VTU/Udata.npy')
-Xdata = np.load('/src/code/data/VORT_DATA_VTU/Xdata.npy')
+Xdata = np.load(r"src/data/VORT_DATA_VTU/Xdata.npy")
+Udata = np.load(r"src/data/VORT_DATA_VTU/Udata.npy")
+N_u = 100
+N_f = 1500
+idx = select_idx(Xdata, N_u, criterion='lhs')
+X_d_train, U_d_train = conform_data(Xdata, Udata, idx)
+X_f_train = circle_points(N_f)
+print("i")
+plt.scatter(Xdata[idx,0],Xdata[idx,1])
+plt.scatter(X_f_train[:,0],X_f_train[:,1],c='red')
+plt.legend(['Datos', 'Física'])
+plt.xlim([-5, 15])
+plt.ylim([-5, 5])
+
+print("i")
 
 t = data['t'].flatten()[:,None]
 x = data['x'].flatten()[:,None]
