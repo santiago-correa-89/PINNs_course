@@ -132,8 +132,8 @@ Uinf = 1
 I_Re = nu/(Uinf*D)   
 noise = 0.0        
 N_u = 100
-N_f = 10000
-Niter = 5000
+N_f = 2000
+Niter = 10000
 
 # Defining Neural Network
 layers = [3, 20, 20, 20, 20, 20, 20, 20, 20, 2]
@@ -144,10 +144,6 @@ b = [tf.Variable(tf.zeros([1, layers[l]])) for l in range(1, L)]
 # Load Data Xdata refers to spacial position of point, Udata is the Velocity field and Pressure fields for the points. 
 Xdata = np.load(r"src/data/VORT_DATA_VTU/Xdata.npy")
 Udata = np.load(r"src/data/VORT_DATA_VTU/Udata.npy")
-
-# Number of data and physics points
-N_u = 100
-N_f = 1500
 
 # Select a number of point to train for Data and Physics (Domain)
 idx = select_idx(Xdata, N_u, criterion='lhs')
@@ -173,9 +169,12 @@ n=0
 loss = []
 while n <= Niter:
     loss_= train_step(W, b, X_d_train_tf, U_d_train_tf, X_f_train_tf, optimizer, I_Re)
-    loss.append(loss_)    
-    print(f"Iteration is: {n} and loss is: {loss_}")
+    loss.append(loss_)
+    if(n %50 == 0):   
+        print(f"Iteration is: {n} and loss is: {loss_}")
     n+=1
+
+
 
 elapsed = time.time() - start_time                
 print('Training time: %.4f' % (elapsed))
