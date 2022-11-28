@@ -133,7 +133,7 @@ I_Re = nu/(Uinf*D)
 noise = 0.0        
 N_u = 100
 N_f = 2000
-Niter = 10000
+Niter = 2500
 
 # Defining Neural Network
 layers = [3, 20, 20, 20, 20, 20, 20, 20, 20, 2]
@@ -170,7 +170,7 @@ loss = []
 while n <= Niter:
     loss_= train_step(W, b, X_d_train_tf, U_d_train_tf, X_f_train_tf, optimizer, I_Re)
     loss.append(loss_)
-    if(n %50 == 0):   
+    if(n %100 == 0):   
         print(f"Iteration is: {n} and loss is: {loss_}")
     n+=1
 
