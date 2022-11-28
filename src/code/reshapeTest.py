@@ -68,7 +68,7 @@ if __name__ == "__main__":
     r = 0.5
     X_train_f = np.vstack([r*np.cos(angle),r*np.sin(angle)]).T
     """
-    N_u = 100
+    N_u = 40
     N_f = 1500
     idx = select_idx(Xdata, N_u, criterion='lhs')
     X_d_train, U_d_train = conform_data(Xdata, Udata, idx)
