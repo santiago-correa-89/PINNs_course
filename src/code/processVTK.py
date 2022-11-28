@@ -26,7 +26,7 @@ for i in range(201):
     ## 
     points = output.GetPoints()
     npts = points.GetNumberOfPoints()
-    ## Each elemnts of x is list of 3 float [xp, yp, zp]
+    ## Each element of x is list of 3 float [xp, yp, zp]
     r = vtk_to_numpy(points.GetData())
     print(f"Shape of point data:{r.shape}")
     
