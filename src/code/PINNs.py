@@ -101,7 +101,7 @@ def train_step(W, b, X_d_train_tf, uvp_train_tf, X_f_train_tf, opt, I_Re):
     
     with tf.GradientTape(persistent=True) as tape4:
         tape4.watch([W, b])
-        output = net_u(x_d, y_d, t_d, W, b)
+        #output = net_u(x_d, y_d, t_d, W, b)
         
         with tf.GradientTape(persistent=True) as tape5:
             tape5.watch([x_d, y_d, t_d])
@@ -170,10 +170,10 @@ n=0
 loss = []
 phi_predict = []
 p_predict = []
-
-x_predict = np.array(np.arange(-5,15, 0.1, dtype=int))
-y_predict = np.array(np.arange(-5,5, 0.1, dtype=int))
-t_predict = np.array(np.arange(0,200,1, dtype=int))
+9
+x_predict = tf.convert_to_tensor(np.array(np.arange(-5,15, 0.1, dtype=int)))
+y_predict = tf.convert_to_tensor(np.array(np.arange(-5,5, 0.1, dtype=int)))
+t_predict = tf.convert_to_tensor(np.array(np.arange(0,1,1, dtype=int)))
 
 while n <= Niter:
     loss_, W_, b_ = train_step(W, b, X_d_train_tf, U_d_train_tf, X_f_train_tf, optimizer, I_Re)
