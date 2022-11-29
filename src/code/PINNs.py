@@ -9,6 +9,7 @@ from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.gridspec as gridspec
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
+import plotting
 
 import tensorflow as tf
 import numpy as np
@@ -44,7 +45,7 @@ def train_vars(W, b):
     return W + b
 
 def net_u(x, y, t, w, b):
-    output = DNN(tf.concat([x, y, t],1), w, b)
+    output  = DNN(tf.concat([x, y, t],1), w, b)
     return output
 
 #@tf.function
@@ -123,7 +124,7 @@ def train_step(W, b, X_d_train_tf, uvp_train_tf, X_f_train_tf, opt, I_Re):
     grads = tape4.gradient(loss, train_vars(W,b))
     opt.apply_gradients(zip(grads, train_vars(W,b)))
     del tape4
-    return loss
+    return loss, W, b
 
 # Defining variables
 D = 1
@@ -133,7 +134,7 @@ I_Re = nu/(Uinf*D)
 noise = 0.0        
 N_u = 100
 N_f = 2000
-Niter = 2500
+Niter = 1000
 
 # Defining Neural Network
 layers = [3, 20, 20, 20, 20, 20, 20, 20, 20, 2]
@@ -167,15 +168,46 @@ optimizer = tf.optimizers.Adam(learning_rate=lr)
 start_time = time.time()
 n=0
 loss = []
+phi_predict = []
+p_predict = []
+
+x_predict = np.array(np.arange(-5,15, 0.1, dtype=int))
+y_predict = np.array(np.arange(-5,5, 0.1, dtype=int))
+t_predict = np.array(np.arange(0,200,1, dtype=int))
+
 while n <= Niter:
-    loss_= train_step(W, b, X_d_train_tf, U_d_train_tf, X_f_train_tf, optimizer, I_Re)
+    loss_, W_, b_ = train_step(W, b, X_d_train_tf, U_d_train_tf, X_f_train_tf, optimizer, I_Re)
     loss.append(loss_)
+    
+    #for i in x_predict:
+        #for j in y_predict:
+            #for k in t_predict:
+    predict = net_u(x_predict, y_predict, t_predict, W_, b_)
+    p_predict.append(predict[:, 0:1])
+    phi_predict.append(predict[:, 1:2])
+    
+    u_ = np.gradient(phi_predict, y_predict)
+    v_ = -np.gradient(phi_predict,x_predict)
+        
     if(n %100 == 0):   
         print(f"Iteration is: {n} and loss is: {loss_}")
     n+=1
 
-
-
 elapsed = time.time() - start_time                
 print('Training time: %.4f' % (elapsed))
 
+########     Exact p(t,x,y)     ###########
+fig, ax = newfig(1.0, 1.2)
+gs2 = gridspec.GridSpec(1, 2) 
+ax = plt.subplot(gs2[:, 1])
+h = ax.imshow(p, interpolation='nearest', cmap='rainbow', 
+                  extent=[x.min(), x.max(), y.min(), y.max()], 
+                  origin='lower', aspect='auto')
+divider = make_axes_locatable(ax)
+cax = divider.append_axes("right", size="5%", pad=0.05)
+
+fig.colorbar(h, cax=cax)
+ax.set_xlabel('$x$')
+ax.set_ylabel('$y$')
+ax.set_aspect('equal', 'box')
+ax.set_title('Exact pressure', fontsize = 10)
