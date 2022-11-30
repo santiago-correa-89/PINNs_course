@@ -15,6 +15,8 @@ import tensorflow as tf
 import numpy as np
 import pandas as pd
 import time
+import datetime
+import pickle
 
 import sys
 # caution: path[0] is reserved for script path (or '' in REPL)
@@ -24,6 +26,17 @@ from reshapeTest import *
 np.random.seed(seed=1234)
 tf.random.set_seed(1234)
 tf.config.experimental.enable_tensor_float_32_execution(False)
+
+#Pickle save
+def mySave(route, variable):    
+    with open(route, 'wb') as file:
+        pickle.dump(variable, file)
+        
+#Pickle load
+def myLoad(route):    
+    with open(route, 'rb') as file:
+        variable = pickle.load(file)
+    return variable
 
 # Initalization of Network
 def hyper_initial(size):
@@ -45,7 +58,7 @@ def train_vars(W, b):
     return W + b
 
 def net_u(x, y, t, w, b):
-    output  = DNN(tf.concat([x, y, t],1), w, b)
+    output  = DNN(tf.concat([x, y, t], 1), w, b)
     return output
 
 #@tf.function
@@ -101,7 +114,6 @@ def train_step(W, b, X_d_train_tf, uvp_train_tf, X_f_train_tf, opt, I_Re):
     
     with tf.GradientTape(persistent=True) as tape4:
         tape4.watch([W, b])
-        #output = net_u(x_d, y_d, t_d, W, b)
         
         with tf.GradientTape(persistent=True) as tape5:
             tape5.watch([x_d, y_d, t_d])
@@ -126,98 +138,54 @@ def train_step(W, b, X_d_train_tf, uvp_train_tf, X_f_train_tf, opt, I_Re):
     del tape4
     return loss, W, b
 
+if __name__ == "__main__": 
 # Defining variables
-D = 1
-nu = 0.01
-Uinf = 1
-I_Re = nu/(Uinf*D)   
-noise = 0.0        
-N_u = 100
-N_f = 2000
-Niter = 5000
+    D = 1
+    nu = 0.01
+    Uinf = 1
+    I_Re = nu/(Uinf*D)   
+    noise = 0.0        
+    N_u = 100
+    N_f = 2000
+    Niter = 3
 
-# Defining Neural Network
-layers = [3, 20, 20, 20, 20, 20, 20, 20, 20, 2]
-L = len(layers)
-W = [hyper_initial([layers[l-1], layers[l]]) for l in range(1, L)] 
-b = [tf.Variable(tf.zeros([1, layers[l]])) for l in range(1, L)] 
+    # Defining Neural Network
+    layers = [3, 20, 20, 20, 20, 20, 20, 20, 20, 2]
+    L = len(layers)
+    W = [hyper_initial([layers[l-1], layers[l]]) for l in range(1, L)] 
+    b = [tf.Variable(tf.zeros([1, layers[l]])) for l in range(1, L)] 
 
-# Load Data Xdata refers to spacial position of point, Udata is the Velocity field and Pressure fields for the points. 
-Xdata = np.load(r"src/data/VORT_DATA_VTU/Xdata.npy")
-Udata = np.load(r"src/data/VORT_DATA_VTU/Udata.npy")
+    # Load Data Xdata refers to spacial position of point, Udata is the Velocity field and Pressure fields for the points. 
+    Xdata = np.load(r"src/data/VORT_DATA_VTU/Xdata.npy")
+    Udata = np.load(r"src/data/VORT_DATA_VTU/Udata.npy")
 
-# Select a number of point to train for Data and Physics (Domain)
-idx = select_idx(Xdata, N_u, criterion='lhs')
-X_d_train, U_d_train = conform_data(Xdata, Udata, idx)
-X_f_train = circle_points(N_f)
-#print("i")
-#plt.scatter(Xdata[idx,0],Xdata[idx,1])
-#plt.scatter(X_f_train[:,0],X_f_train[:,1],c='red')
-#plt.legend(['Datos', 'Física'])
-#plt.xlim([-5, 15])
-#plt.ylim([-5, 5])
-#print("i")
+    # Select a number of point to train for Data and Physics (Domain)
+    idx = select_idx(Xdata, N_u, criterion='lhs')
+    X_d_train, U_d_train = conform_data(Xdata, Udata, idx)
+    X_f_train = circle_points(N_f)
 
-X_d_train_tf = tf.convert_to_tensor(X_d_train, dtype=tf.float32)
-U_d_train_tf = tf.convert_to_tensor(U_d_train, dtype=tf.float32)
-X_f_train_tf = tf.convert_to_tensor(X_f_train, dtype=tf.float32)
+    X_d_train_tf = tf.convert_to_tensor(X_d_train, dtype=tf.float32)
+    U_d_train_tf = tf.convert_to_tensor(U_d_train, dtype=tf.float32)
+    X_f_train_tf = tf.convert_to_tensor(X_f_train, dtype=tf.float32)
 
-lr = 1e-3
-optimizer = tf.optimizers.Adam(learning_rate=lr)
+    lr = 1e-3
+    optimizer = tf.optimizers.Adam(learning_rate=lr)
 
-start_time = time.time()
-n=0
-loss = []
-phi_predict = []
-p_predict = []
-u_predict = []
-v_predict = []
+    start_time = time.time()
+    n=0
+    loss = []
 
-x_predict = np.vstack(np.arange(-5,15, 0.1))
-y_predict = np.vstack(np.arange(-5,5, 0.05))
-t_predict = np.vstack(np.arange(0, 200, 1))
-
-x_predict = tf.convert_to_tensor(x_predict, dtype=tf.float32)
-y_predict = tf.convert_to_tensor(y_predict, dtype=tf.float32)
-t_predict = tf.convert_to_tensor(t_predict, dtype=tf.float32)
-
-while n <= Niter:
-    
-    with tf.GradientTape(persistent=True) as tape6:
-        tape6.watch([x_predict, y_predict, t_predict])
+    while n <= Niter:
         loss_, W_, b_ = train_step(W, b, X_d_train_tf, U_d_train_tf, X_f_train_tf, optimizer, I_Re)
-        loss.append(loss_)
-        predict = net_u(x_predict, y_predict, t_predict, W_, b_)
-        p_predict.append(predict[:, 0:1])
-        phi_predict = predict[:, 1:2]
-    
-    u_ = tape6.gradient(phi_predict, y_predict)
-    v_ = -tape6.gradient(phi_predict, x_predict)
-        
-    u_predict.append(u_)
-    v_predict.append(v_)
-    
-    del tape6
-        
-    if(n %100 == 0):   
-        print(f"Iteration is: {n} and loss is: {loss_}")
-    n+=1
+        loss.append(loss_)    
+        if(n %1 == 0):   
+            print(f"Iteration is: {n} and loss is: {loss_}")
+        n+=1
 
-elapsed = time.time() - start_time                
-print('Training time: %.4f' % (elapsed))
+    elapsed = time.time() - start_time                
+    print('Training time: %.4f' % (elapsed))
 
-########     Exact p(t,x,y)     ###########
-fig, ax = newfig(1.0, 1.2)
-gs2 = gridspec.GridSpec(1, 2) 
-ax = plt.subplot(gs2[:, 1])
-h = ax.imshow(p, interpolation='nearest', cmap='rainbow', 
-                  extent=[x.min(), x.max(), y.min(), y.max()], 
-                  origin='lower', aspect='auto')
-divider = make_axes_locatable(ax)
-cax = divider.append_axes("right", size="5%", pad=0.05)
-
-fig.colorbar(h, cax=cax)
-ax.set_xlabel('$x$')
-ax.set_ylabel('$y$')
-ax.set_aspect('equal', 'box')
-ax.set_title('Exact pressure', fontsize = 10)
+    fecha = str(datetime.datetime.now().month)+str(datetime.datetime.now().day)+str(datetime.datetime.now().hour)+str(datetime.datetime.now().minute)
+    mySave('wResult'+fecha, W)
+    mySave('bResult'+fecha, b)
+    mySave('lossResult'+fecha, loss)
