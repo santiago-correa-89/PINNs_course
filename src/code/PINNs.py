@@ -134,7 +134,7 @@ I_Re = nu/(Uinf*D)
 noise = 0.0        
 N_u = 100
 N_f = 2000
-Niter = 1000
+Niter = 5000
 
 # Defining Neural Network
 layers = [3, 20, 20, 20, 20, 20, 20, 20, 20, 2]
@@ -170,24 +170,34 @@ n=0
 loss = []
 phi_predict = []
 p_predict = []
-9
-x_predict = tf.convert_to_tensor(np.array(np.arange(-5,15, 0.1, dtype=int)))
-y_predict = tf.convert_to_tensor(np.array(np.arange(-5,5, 0.1, dtype=int)))
-t_predict = tf.convert_to_tensor(np.array(np.arange(0,1,1, dtype=int)))
+u_predict = []
+v_predict = []
+
+x_predict = np.vstack(np.arange(-5,15, 0.1))
+y_predict = np.vstack(np.arange(-5,5, 0.05))
+t_predict = np.vstack(np.arange(0, 200, 1))
+
+x_predict = tf.convert_to_tensor(x_predict, dtype=tf.float32)
+y_predict = tf.convert_to_tensor(y_predict, dtype=tf.float32)
+t_predict = tf.convert_to_tensor(t_predict, dtype=tf.float32)
 
 while n <= Niter:
-    loss_, W_, b_ = train_step(W, b, X_d_train_tf, U_d_train_tf, X_f_train_tf, optimizer, I_Re)
-    loss.append(loss_)
     
-    #for i in x_predict:
-        #for j in y_predict:
-            #for k in t_predict:
-    predict = net_u(x_predict, y_predict, t_predict, W_, b_)
-    p_predict.append(predict[:, 0:1])
-    phi_predict.append(predict[:, 1:2])
+    with tf.GradientTape(persistent=True) as tape6:
+        tape6.watch([x_predict, y_predict, t_predict])
+        loss_, W_, b_ = train_step(W, b, X_d_train_tf, U_d_train_tf, X_f_train_tf, optimizer, I_Re)
+        loss.append(loss_)
+        predict = net_u(x_predict, y_predict, t_predict, W_, b_)
+        p_predict.append(predict[:, 0:1])
+        phi_predict = predict[:, 1:2]
     
-    u_ = np.gradient(phi_predict, y_predict)
-    v_ = -np.gradient(phi_predict,x_predict)
+    u_ = tape6.gradient(phi_predict, y_predict)
+    v_ = -tape6.gradient(phi_predict, x_predict)
+        
+    u_predict.append(u_)
+    v_predict.append(v_)
+    
+    del tape6
         
     if(n %100 == 0):   
         print(f"Iteration is: {n} and loss is: {loss_}")
