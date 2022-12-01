@@ -15,12 +15,12 @@ def nonuniform_imshow(x, y, z, aspect=1, cmap=plt.cm.rainbow):
   hm = ax.imshow(zi, extent=[x.min(), x.max(), y.max(), y.min()]) 
   return hm, xi, yi, zi
 
-def animation(heatmap, j):
+def animation(heatmap, folder, j):
   img = plt.colorbar(heatmap)
   plt.title('Field P (Pa)')
   plt.xlabel('coord x')
   plt.ylabel('coord y')
-  plt.savefig(r"src/data/fig/Presion/P_predict" + str(j) + ".png")
+  plt.savefig(folder + str(j) + ".png")
   plt.ion()
   plt.show()
   plt.pause(1)   

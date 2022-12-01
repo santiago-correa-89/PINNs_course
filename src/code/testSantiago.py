@@ -21,6 +21,7 @@ import pickle
 from reshapeTest import *
 from loadData import *
 from PINNs import *
+from videoCreater import *
 
 #Pickle save
 def mySave(route, variable):    
@@ -36,10 +37,10 @@ def myLoad(route):
 #OrganizeGrid
 def arangeData(x, y, t, T=None):
     if T==None:
-        Y = y.shape[0]
         X = x.shape[0]
+        Y = y.shape[0]
         T = t.shape[0]
-    xGrid = np.c_[np.vstack([x]).repeat(Y*T), np.transpose(np.vstack(np.tile([y], X*T))), np.vstack(t[:].repeat(Y*X))]
+    xGrid = np.c_[np.vstack(np.tile(x[:].repeat(Y), T)), np.transpose(np.vstack(np.tile([y], X*T))), np.vstack([t]).repeat(Y*X)]
 
     return xGrid
 
@@ -59,27 +60,55 @@ W = myLoad('W_result')
 b = myLoad('b_result')
 loss = myLoad('loss_result')
 
-x = np.arange(-5, 15, 0.5)
-y = np.arange(-5,5, 0.25)
+x = np.arange(-5, 15, 0.1)
+y = np.arange(-5,5, 0.1)
 t = np.arange(0, 200, 1)
 
 grid = arangeData(x, y, t)
 
 phi, p = evalNNesc(grid, W, b)
 
-Xmesh, Ymesh = np.meshgrid(x, y)            
-time = 40
-timeEvalMin = time*x.shape[0]*y.shape[0]
-timeEvalMax = timeEvalMin + x.shape[0]*y.shape[0] - 1
-fig, ax = plt.subplots()
-hm = ax.imshow(p[timeEvalMin:timeEvalMax:1], extent=[Xmesh.min(), Xmesh.max(), Ymesh.max(), Ymesh.min()]) 
+for k in range(t.shape[0]):
+    timeEvalMin = k*x.shape[0]*y.shape[0]
+    timeEvalMax = timeEvalMin + x.shape[0]*y.shape[0]
+    
+    grads = np.gradient(phi[timeEvalMin:timeEvalMax].reshape((x.shape[0],y.shape[0])))
+    u_ = grads[1]
+    v_ = -grads[0]
+    p_ = p[timeEvalMin:timeEvalMax].reshape((x.shape[0],y.shape[0]))
+    
+    fig, ax = plt.subplots()  
+    hm = ax.imshow(p_.T, extent=[x.min(), x.max(), y.min(), y.max()])
+    animation(hm, r"src/data/fig/presionEstimation/presion", k) 
+    plt.close()
+    
+    fig, ax = plt.subplots()  
+    hm = ax.imshow(u_.T, extent=[x.min(), x.max(), y.min(), y.max()])
+    animation(hm, r"src/data/fig/uEstimation/u", k) 
+    plt.close()
+    
+    fig, ax = plt.subplots()  
+    hm = ax.imshow(v_.T, extent=[x.min(), x.max(), y.min(), y.max()])
+    animation(hm, r"src/data/fig/vEstimation/v", k) 
+    plt.close()
+    
+videoCreater(r"src/data/fig/presionEstimation/presion", r"src/data/fig/presionEstimation/presion.avi", t.shape[0])
+videoCreater(r"src/data/fig/uEstimation/u", r"src/data/fig/uEstimation/u.avi", t.shape[0])
+videoCreater(r"src/data/fig/vEstimation/v", r"src/data/fig/presionEstimation/v.avi", t.shape[0])
 
+for k in range(t.shape[0]):
+    os.remove(r"src/data/fig/presionEstimation/presion" + str(k) + ".png")
+    os.remove(r"src/data/fig/uEstimation/u" + str(k) + ".png")
+    os.remove(r"src/data/fig/vEstimation/v" + str(k) + ".png")
+    
+    
 
-lossnp = tf.concat(loss,0).numpy()
-fig = plt.figure()
-ax = fig.add_subplot(111)
-ax.plot(lossnp)
-ax.set_xlabel('$n iter$')
-ax.set_ylabel('$loss$')    
-ax.set_title('Loss evolution', fontsize = 10)
-print("hola")
+print('prueba')
+
+# lossnp = tf.concat(loss,0).numpy()
+# fig = plt.figure()
+# ax = fig.add_subplot(111)
+# ax.plot(lossnp)
+# ax.set_xlabel('$n iter$')
+# ax.set_ylabel('$loss$')    
+# ax.set_title('Loss evolution', fontsize = 10)
