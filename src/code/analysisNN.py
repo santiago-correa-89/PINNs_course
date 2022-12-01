@@ -69,7 +69,7 @@ for x in allx:
 
 Xmesh, Ymesh = np.meshgrid(allx, ally)            
 fig, ax = plt.subplots()
-hm = ax.imshow(allp[:,:,50].T, extent=[Xmesh.min(), Xmesh.max(), Ymesh.max(), Ymesh.min()]) 
+hm = ax.imshow(allp[:,:,100].T, extent=[Xmesh.min(), Xmesh.max(), Ymesh.max(), Ymesh.min()]) 
 
 
 lossnp = tf.concat(loss,0).numpy()

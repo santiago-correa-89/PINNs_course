@@ -36,7 +36,7 @@ def conform_data(Xdata, Udata, idx, T=None):
     U_train = np.vstack([Usort[:,:,t] for t in range(T)]) 
     return X_train, U_train
 
-def circle_points(N_f,T=201):
+def circle_points(N_f, T=201):
     r = 0.5
     angle = np.pi* np.random.uniform(0,2,N_f)
     X_train_f = np.vstack([r*np.cos(angle),r*np.sin(angle)]).T
