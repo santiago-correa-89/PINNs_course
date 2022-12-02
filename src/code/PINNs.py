@@ -147,7 +147,7 @@ if __name__ == "__main__":
     noise = 0.0        
     N_u = 100
     N_f = 2000
-    Niter = 3
+    Niter = 10000
 
     # Defining Neural Network
     layers = [3, 20, 20, 20, 20, 20, 20, 20, 20, 2]
@@ -163,7 +163,8 @@ if __name__ == "__main__":
     idx = select_idx(Xdata, N_u, criterion='lhs')
     X_d_train, U_d_train = conform_data(Xdata, Udata, idx)
     X_f_train = circle_points(N_f)
-
+    X_f_train = np.vstack([X_f_train, X_d_train])
+    
     X_d_train_tf = tf.convert_to_tensor(X_d_train, dtype=tf.float32)
     U_d_train_tf = tf.convert_to_tensor(U_d_train, dtype=tf.float32)
     X_f_train_tf = tf.convert_to_tensor(X_f_train, dtype=tf.float32)
@@ -178,7 +179,7 @@ if __name__ == "__main__":
     while n <= Niter:
         loss_, W_, b_ = train_step(W, b, X_d_train_tf, U_d_train_tf, X_f_train_tf, optimizer, I_Re)
         loss.append(loss_)    
-        if(n %1 == 0):   
+        if(n %100 == 0):   
             print(f"Iteration is: {n} and loss is: {loss_}")
         n+=1
 

@@ -56,18 +56,18 @@ def evalNNesc(X, W, b):
     
     return phi, p
 
-W = myLoad('W_result')
-b = myLoad('b_result')
-loss = myLoad('loss_result')
+W = myLoad('wResult1212048')
+b = myLoad('bResult1212048')
+loss = myLoad('lossResult1212048')
 
 x = np.arange(-5, 15, 0.1)
 y = np.arange(-5,5, 0.1)
 t = np.arange(0, 200, 1)
 
 grid = arangeData(x, y, t)
-
 phi, p = evalNNesc(grid, W, b)
 
+fecha = str(datetime.datetime.now().month)+str(datetime.datetime.now().day)+str(datetime.datetime.now().hour)+str(datetime.datetime.now().minute)
 for k in range(t.shape[0]):
     timeEvalMin = k*x.shape[0]*y.shape[0]
     timeEvalMax = timeEvalMin + x.shape[0]*y.shape[0]
@@ -91,10 +91,10 @@ for k in range(t.shape[0]):
     hm = ax.imshow(v_.T, extent=[x.min(), x.max(), y.min(), y.max()])
     animation(hm, r"src/data/fig/vEstimation/v", k) 
     plt.close()
-    
+
 videoCreater(r"src/data/fig/presionEstimation/presion", r"src/data/fig/presionEstimation/presion.avi", t.shape[0])
 videoCreater(r"src/data/fig/uEstimation/u", r"src/data/fig/uEstimation/u.avi", t.shape[0])
-videoCreater(r"src/data/fig/vEstimation/v", r"src/data/fig/presionEstimation/v.avi", t.shape[0])
+videoCreater(r"src/data/fig/vEstimation/v", r"src/data/fig/vEstimation/v.avi", t.shape[0])
 
 for k in range(t.shape[0]):
     os.remove(r"src/data/fig/presionEstimation/presion" + str(k) + ".png")
