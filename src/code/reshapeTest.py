@@ -40,7 +40,7 @@ def circle_points(N_f, T=201):
     r = 0.5
     angle = np.pi* np.random.uniform(0,2,N_f)
     X_train_f = np.vstack([r*np.cos(angle),r*np.sin(angle)]).T
-    X_train_f = np.c_[X_train_f, np.random.randint(T,size=N_f)]
+    X_train_f = np.c_[X_train_f, np.random.randint(T, size=N_f) ]
     return X_train_f
 
 if __name__ == "__main__": 

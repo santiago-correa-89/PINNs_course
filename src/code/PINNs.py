@@ -127,16 +127,19 @@ def train_step(W, b, X_d_train_tf, uvp_train_tf, X_f_train_tf, opt, I_Re):
         del tape5    
         
         fx, fy, _, _, _ = net_f(x_f,y_f, t_f, W, b, I_Re)
-        loss =  tf.reduce_mean(tf.square(u - uvp_train_tf[:,0:1])) \
+        lossD =  tf.reduce_mean(tf.square(u - uvp_train_tf[:,0:1])) \
         + tf.reduce_mean(tf.square(v - uvp_train_tf[:,1:2])) \
-        + tf.reduce_mean(tf.square(p - uvp_train_tf[:,2:3])) \
-        + tf.reduce_mean(tf.square( fx )) \
+        + tf.reduce_mean(tf.square(p - uvp_train_tf[:,2:3]))
+                    
+        lossF = tf.reduce_mean(tf.square( fx )) \
         + tf.reduce_mean(tf.square( fy ))
+        
+        loss = lossD + lossF
         
     grads = tape4.gradient(loss, train_vars(W,b))
     opt.apply_gradients(zip(grads, train_vars(W,b)))
     del tape4
-    return loss, W, b
+    return loss, lossD, lossF, W, b
 
 if __name__ == "__main__": 
 # Defining variables
@@ -147,7 +150,7 @@ if __name__ == "__main__":
     noise = 0.0        
     N_u = 100
     N_f = 2000
-    Niter = 10000
+    Niter = 3
 
     # Defining Neural Network
     layers = [3, 20, 20, 20, 20, 20, 20, 20, 20, 2]
@@ -163,6 +166,16 @@ if __name__ == "__main__":
     idx = select_idx(Xdata, N_u, criterion='lhs')
     X_d_train, U_d_train = conform_data(Xdata, Udata, idx)
     X_f_train = circle_points(N_f)
+    
+    # Normalize step
+    X_d_train[:, 0:1] = ((X_d_train[:, 0:1] - X_d_train[:, 0:1].min())/(X_d_train[:, 0:1].max() - X_d_train[:, 0:1].min()))*2 - 1
+    X_d_train[:, 1:2] = ((X_d_train[:, 1:2] - X_d_train[:, 1:2].min())/(X_d_train[:, 1:2].max() - X_d_train[:, 1:2].min()))*2 - 1
+    X_d_train[:, 2:3] = ((X_d_train[:, 2:3] - X_d_train[:, 2:3].min())/(X_d_train[:, 2:3].max() - X_d_train[:, 2:3].min()))*2 - 1
+    
+    X_f_train[:, 0:1] = ((X_f_train[:, 0:1] - X_f_train[:, 0:1].min())/(X_f_train[:, 0:1].max() - X_f_train[:, 0:1].min()))*2 - 1
+    X_f_train[:, 1:2] = ((X_f_train[:, 1:2] - X_f_train[:, 1:2].min())/(X_f_train[:, 1:2].max() - X_f_train[:, 1:2].min()))*2 - 1
+    X_f_train[:, 2:3] = ((X_f_train[:, 2:3] - X_f_train[:, 2:3].min())/(X_f_train[:, 2:3].max() - X_f_train[:, 2:3].min()))*2 - 1
+    
     X_f_train = np.vstack([X_f_train, X_d_train])
     
     X_d_train_tf = tf.convert_to_tensor(X_d_train, dtype=tf.float32)
@@ -175,10 +188,14 @@ if __name__ == "__main__":
     start_time = time.time()
     n=0
     loss = []
+    lossD = []
+    lossF = []
 
     while n <= Niter:
-        loss_, W_, b_ = train_step(W, b, X_d_train_tf, U_d_train_tf, X_f_train_tf, optimizer, I_Re)
-        loss.append(loss_)    
+        loss_, lossD_, lossF_, W, b = train_step(W, b, X_d_train_tf, U_d_train_tf, X_f_train_tf, optimizer, I_Re)
+        loss.append(loss_)
+        lossD.append(lossD_)
+        lossF.append(lossF_)   
         if(n %100 == 0):   
             print(f"Iteration is: {n} and loss is: {loss_}")
         n+=1
@@ -190,3 +207,5 @@ if __name__ == "__main__":
     mySave('wResult'+fecha, W)
     mySave('bResult'+fecha, b)
     mySave('lossResult'+fecha, loss)
+    mySave('lossDResult'+fecha, lossD)
+    mySave('lossFResult'+fecha, lossF)
