@@ -38,6 +38,13 @@ def myLoad(route):
         variable = pickle.load(file)
     return variable
 
+#Data Normalization
+def myNormalize(X):
+    min_values = X.min(axis=0)
+    max_values = X.max(axis=0)
+    X = ((X - min_values)/(max_values - min_values))*2 - 1
+    return X
+
 # Initalization of Network
 def hyper_initial(size):
     in_dim = size[0]
@@ -147,10 +154,11 @@ if __name__ == "__main__":
     nu = 0.01
     Uinf = 1
     I_Re = nu/(Uinf*D)   
-    noise = 0.0        
-    N_u = 100
-    N_f = 2000
-    Niter = 3
+    noise = 0.0
+    Ntest = 200
+    N_u = 40
+    N_f = 100
+    Niter = 10
 
     # Defining Neural Network
     layers = [3, 20, 20, 20, 20, 20, 20, 20, 20, 2]
@@ -159,23 +167,28 @@ if __name__ == "__main__":
     b = [tf.Variable(tf.zeros([1, layers[l]])) for l in range(1, L)] 
 
     # Load Data Xdata refers to spacial position of point, Udata is the Velocity field and Pressure fields for the points. 
-    Xdata = np.load(r"src/data/VORT_DATA_VTU/Xdata.npy")
-    Udata = np.load(r"src/data/VORT_DATA_VTU/Udata.npy")
+    Xdata = np.load(r"src/data/VORT_DATA_VTU/XdataNorm.npy")
+    Udata = np.load(r"src/data/VORT_DATA_VTU/UdataNorm.npy")
 
     # Select a number of point to train for Data and Physics (Domain)
-    idx = select_idx(Xdata, N_u, criterion='lhs')
-    X_d_train, U_d_train = conform_data(Xdata, Udata, idx)
-    X_f_train = circle_points(N_f)
+    idxTest = select_idx(Xdata, Ntest, criterion='lhs')
+    #X_test, U_test = conform_data(Xdata, Udata, idx)
     
-    # Normalize step
-    X_d_train[:, 0:1] = ((X_d_train[:, 0:1] - X_d_train[:, 0:1].min())/(X_d_train[:, 0:1].max() - X_d_train[:, 0:1].min()))*2 - 1
-    X_d_train[:, 1:2] = ((X_d_train[:, 1:2] - X_d_train[:, 1:2].min())/(X_d_train[:, 1:2].max() - X_d_train[:, 1:2].min()))*2 - 1
-    X_d_train[:, 2:3] = ((X_d_train[:, 2:3] - X_d_train[:, 2:3].min())/(X_d_train[:, 2:3].max() - X_d_train[:, 2:3].min()))*2 - 1
+    # Remove index used for test
+    Xdata = np.delete(Xdata, idxTest, axis=0)
+    Udata = np.delete(Udata, idxTest, axis=0)
     
-    X_f_train[:, 0:1] = ((X_f_train[:, 0:1] - X_f_train[:, 0:1].min())/(X_f_train[:, 0:1].max() - X_f_train[:, 0:1].min()))*2 - 1
-    X_f_train[:, 1:2] = ((X_f_train[:, 1:2] - X_f_train[:, 1:2].min())/(X_f_train[:, 1:2].max() - X_f_train[:, 1:2].min()))*2 - 1
-    X_f_train[:, 2:3] = ((X_f_train[:, 2:3] - X_f_train[:, 2:3].min())/(X_f_train[:, 2:3].max() - X_f_train[:, 2:3].min()))*2 - 1
+    idxU = select_idx(Xdata, N_u, criterion='lhs')
+    X_d_train, U_d_train = conform_data(Xdata, Udata, idxU)
     
+    ptsF = np.random.uniform([-1, -1], [1, 1], size=(N_f, 2))  
+    X_f_train = np.c_[np.vstack([ptsF]*201),np.array(list(range(201))).repeat(N_f)]
+    X_f_train = np.vstack([X_f_train, circle_points(N_f)])
+    
+    # # Normalize step
+    # U_d_train = myNormalize(U_d_train)
+    # X_d_train = myNormalize(X_d_train)
+    X_f_train = myNormalize(X_f_train)
     X_f_train = np.vstack([X_f_train, X_d_train])
     
     X_d_train_tf = tf.convert_to_tensor(X_d_train, dtype=tf.float32)
@@ -203,9 +216,11 @@ if __name__ == "__main__":
     elapsed = time.time() - start_time                
     print('Training time: %.4f' % (elapsed))
 
+    # Save parameteres for postprocessing
     fecha = str(datetime.datetime.now().month)+str(datetime.datetime.now().day)+str(datetime.datetime.now().hour)+str(datetime.datetime.now().minute)
-    mySave('wResult'+fecha, W)
-    mySave('bResult'+fecha, b)
-    mySave('lossResult'+fecha, loss)
-    mySave('lossDResult'+fecha, lossD)
-    mySave('lossFResult'+fecha, lossF)
+    mySave('idxTest' + fecha, idxTest)
+    mySave('wResult' + fecha, W)
+    mySave('bResult' + fecha, b)
+    mySave('lossResult' + fecha, loss)
+    mySave('lossDResult' + fecha, lossD)
+    mySave('lossFResult' + fecha, lossF)
