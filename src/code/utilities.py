@@ -8,7 +8,7 @@ from scipy import spatial
 from pyDOE import lhs
 
 import pickle
-
+TimeStep = 0.01
 ############ animation and visualization ###########
 def nonuniform_imshow(x, y, z, aspect=1, cmap=plt.cm.rainbow):
   # Create regular grid
@@ -20,9 +20,9 @@ def nonuniform_imshow(x, y, z, aspect=1, cmap=plt.cm.rainbow):
   hm = ax.imshow(zi, extent=[x.min(), x.max(), y.max(), y.min()]) 
   return hm, xi, yi, zi
 
-def animation(heatmap, folder, j):
+def animation(heatmap, folder, j, title):
   img = plt.colorbar(heatmap)
-  plt.title('Field P (Pa)')
+  plt.title(title)
   plt.xlabel('coord x')
   plt.ylabel('coord y')
   plt.savefig(folder + str(j) + ".png")
@@ -83,16 +83,26 @@ def conform_data(Xdata, Udata, idx, T=None):
         T = Udata.shape[-1]
     N_u = idx.shape[0]
     Xsort = Xdata[idx,:]
-    time_dep = 0.1 * np.array(list(range(T))).repeat(N_u)
+    time_dep = TimeStep*np.array(list(range(T))).repeat(N_u)
     X_train = np.c_[np.tile(Xsort, (T, 1)), time_dep]
 
     Usort = Udata[idx,:]
-    U_train = np.stack(Usort[:,:, np.arange(T)], axis=0)
+    U_train = np.vstack([Usort[:,:,t] for t in range(T)]) 
     return X_train, U_train
 
 def circle_points(N_f, T=201):
     r = 0.5
     angle = np.pi* np.random.uniform(0,2,N_f)
     X_train_f = np.vstack([r*np.cos(angle),r*np.sin(angle)]).T
-    X_train_f = np.c_[X_train_f, 0.1*np.random.randint(T, size=N_f) ]#0.1 time step
+    X_train_f = np.c_[X_train_f, TimeStep*np.random.randint(T, size=N_f) ]#0.1 time step
     return X_train_f
+
+#OrganizeGrid
+def arangeData(x, y, t, T=None):
+    if T==None:
+        X = x.shape[0]
+        Y = y.shape[0]
+        T = t.shape[0]
+    xGrid = np.c_[np.vstack(np.tile(x[:].repeat(Y), T)), np.transpose(np.vstack(np.tile([y], X*T))), np.vstack([t]).repeat(Y*X)]
+
+    return xGrid

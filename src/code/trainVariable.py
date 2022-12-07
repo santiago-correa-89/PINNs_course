@@ -33,7 +33,7 @@ def net_u(x, y, t, w, b):
     output  = DNN(tf.concat([x, y, t], 1), w, b)
     return output
 
-def net_f(x, y, t, W, b, I_Re):
+def net_f(x, y, t, W, b, var):
     with tf.GradientTape(persistent=True) as tape1:
         tape1.watch([x, y, t])
         
@@ -65,13 +65,14 @@ def net_f(x, y, t, W, b, I_Re):
     
     del tape1
     
-    fx = u_t + (u*u_x + v*u_y) + p_x - I_Re*(u_xx + u_yy)
-    fy = v_t + (u*v_x + v*v_y) + p_y - I_Re*(v_xx + v_yy)
+    fx = u_t + (u*u_x + v*u_y) + p_x - var*(u_xx + u_yy)
+    fy = v_t + (u*v_x + v*v_y) + p_y - var*(v_xx + v_yy)
     
     return fx, fy, u, v, p
 
-def train_step(W, b, X_d_train_tf, uvp_train_tf, X_f_train_tf, opt, I_Re):
+def train_step(W, b, X_d_train_tf, uvp_train_tf, X_f_train_tf, opt, var):
     # Select data for training
+    alp = 0.6
     x_d = X_d_train_tf[:, 0:1]
     y_d = X_d_train_tf[:, 1:2]
     t_d = X_d_train_tf[:, 2:3]
@@ -81,7 +82,7 @@ def train_step(W, b, X_d_train_tf, uvp_train_tf, X_f_train_tf, opt, I_Re):
     t_f = X_f_train_tf[:, 2:3]
     
     with tf.GradientTape(persistent=True) as tape4:
-        tape4.watch([W, b])
+        tape4.watch([W, b, var])
         
         with tf.GradientTape(persistent=True) as tape5:
             tape5.watch([x_d, y_d, t_d])
@@ -94,7 +95,8 @@ def train_step(W, b, X_d_train_tf, uvp_train_tf, X_f_train_tf, opt, I_Re):
         
         del tape5    
         
-        fx, fy, _, _, _ = net_f(x_f, y_f, t_f, W, b, I_Re)
+        fx, fy, _, _, _ = net_f(x_f, y_f, t_f, W, b, var)
+        
         lossD =  tf.reduce_mean(tf.square(u - uvp_train_tf[:,0:1])) \
         + tf.reduce_mean(tf.square(v - uvp_train_tf[:,1:2])) \
         + tf.reduce_mean(tf.square(p - uvp_train_tf[:,2:3]))
@@ -102,12 +104,17 @@ def train_step(W, b, X_d_train_tf, uvp_train_tf, X_f_train_tf, opt, I_Re):
         lossF = tf.reduce_mean(tf.square( fx )) \
         + tf.reduce_mean(tf.square( fy ))
         
-        loss = lossD + lossF
-        
+        loss = lossD*2*alp+ lossF*2*(1-alp)
+
+    grad1 = tape4.gradient(loss, var)
+
+    opt.apply_gradients(zip([grad1], [var]))
+            
     grads = tape4.gradient(loss, train_vars(W,b))
     opt.apply_gradients(zip(grads, train_vars(W,b)))
+
     del tape4
-    return loss, lossD, lossF, W, b
+    return loss, lossD, lossF, W, b, var
 
 def predict(Xtest, W, b):
     x = Xtest[:, 0:1]
@@ -126,15 +133,20 @@ def predict(Xtest, W, b):
 
 if __name__ == "__main__": 
 # Defining variables
-    D = 1
-    nu = 0.01
-    Uinf = 1
-    I_Re = nu/(Uinf*D)   
+    # Defining Parameters
+    # D = 1
+    # nu = 0.01
+    # Uinf = 1
+    # I_Re = nu/(Uinf*D) 
+    var = tf.Variable([1.0], dtype=tf.float32)
+    
     noise = 0.0        
+    
+    # Defininig training parameters
     Ntest = 100
     Ndata = 40
-    Nfis = 5000 
-    Niter = 5000
+    Nfis = 10000 
+    Niter = 4000
     T=201
 
     # Defining Neural Network
@@ -181,12 +193,13 @@ if __name__ == "__main__":
     lossF = []
 
     while n <= Niter:
-        loss_, lossD_, lossF_, W, b = train_step(W, b, X_d_train_tf, U_d_train_tf, X_f_train_tf, optimizer, I_Re)
-        loss.append(loss_)
-        lossD.append(lossD_)
-        lossF.append(lossF_)   
+        loss_, lossD_, lossF_, W, b, var = train_step(W, b, X_d_train_tf, U_d_train_tf, X_f_train_tf, optimizer, var )
+        loss.append(loss_.numpy())
+        lossD.append(lossD_.numpy())
+        lossF.append(lossF_.numpy())   
         if(n %10 == 0):   
             print(f"Iteration is: {n} and loss is: {loss_}")
+            print(f"var = {var.numpy()[0]}")
         n+=1
 
     elapsed = time.time() - start_time                
@@ -215,5 +228,8 @@ if __name__ == "__main__":
     ax.plot(lossF, 'r--', lossD, 'bs', loss, 'g^')
     ax.set_xlabel('$n iter$')
     ax.set_ylabel('Loss')
+    plt.yscale('log')
     ax.set_title('Loss evolution', fontsize = 10)
     fig.show()
+    
+    print('Hello World')
