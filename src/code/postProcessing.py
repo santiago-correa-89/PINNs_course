@@ -2,8 +2,8 @@ import tensorflow as tf
 import numpy as np
 import time
 import datetime
-import os
 import matplotlib.pyplot as plt
+import os
 
 from utilities import *
 from train import *
@@ -19,9 +19,16 @@ def evalNN(X, W, b):
     
     return phi, p
 
+# Load Error 
+error = np.load(r"src/results/08122022/error.npy")
+Xtest = np.load(r"src/results/08122022/Xtest.npy")
+
 # Load Data Xdata refers to spacial position of point, Udata is the Velocity field and Pressure fields for the points. 
-W = myLoad('wResult1261527')
-b = myLoad('bResult1261527')
+W = myLoad(r"src/results/08122022/wResult1272351")
+b = myLoad(r"src/results/08122022/bResult1272351")
+loss = myLoad(r"src/results/08122022/bResult1272351")
+lossF = myLoad(r"src/results/08122022/bResult1272351")
+lossD = myLoad(r"src/results/08122022/bResult1272351")
 
 x = np.arange(-5, 15, 0.1)
 y = np.arange(-5, 5, 0.05)
@@ -48,21 +55,55 @@ for k in range(t.shape[0]):
     animation(hm, r"src/data/fig/presionEstimation/presion", k, 'Pressure Field') 
     plt.close()
     
+    fig, ax = plt.subplots()
+    hm = ax.imshow(error[:, 2:3], extent=[x.min(), x.max(), y.min(), y.max()])
+    animation(hm, r"src/data/fig/presionEstimation/errPresion", k, 'Error Pressure Field')
+    plt.close() 
+    
     fig, ax = plt.subplots()  
     hm = ax.imshow(u.T, extent=[x.min(), x.max(), y.min(), y.max()])
     animation(hm, r"src/data/fig/uEstimation/u", k, 'U Field') 
     plt.close()
     
+    fig, ax = plt.subplots()
+    #hm, _, _, gridErrorU  = nonuniform_imshow(Xtest[:, 0:1], Xtest[:, 1:2], error[:, 0:1], aspect=1, cmap=plt.cm.rainbow)
+    hm = ax.imshow(error[:, 0:1], extent=[x.min(), x.max(), y.min(), y.max()])
+    animation(hm, r"src/data/fig/uEstimation/errorU", k, 'Error U Field') 
+    plt.close()
+        
     fig, ax = plt.subplots()  
     hm = ax.imshow(v.T, extent=[x.min(), x.max(), y.min(), y.max()])
     animation(hm, r"src/data/fig/vEstimation/v", k, 'V Field') 
+    plt.close()
+    
+    fig, ax = plt.subplots()
+    #hm, _, _, gridErrorV  = nonuniform_imshow(Xtest[:, 0:1], Xtest[:, 1:2], error[:, 2:3], aspect=1, cmap=plt.cm.rainbow)
+    hm = ax.imshow(error[:, 1:2], extent=[x.min(), x.max(), y.min(), y.max()])
+    animation(hm, r"src/data/fig/vEstimation/errorV", k, 'Error V Field') 
     plt.close()
 
 videoCreater(r"src/data/fig/presionEstimation/presion", r"src/data/fig/presionEstimation/presion" + str(date) + ".avi", t.shape[0])
 videoCreater(r"src/data/fig/uEstimation/u", r"src/data/fig/uEstimation/u" + str(date) + ".avi", t.shape[0])
 videoCreater(r"src/data/fig/vEstimation/v", r"src/data/fig/vEstimation/v" + str(date) + ".avi", t.shape[0])
+videoCreater(r"src/data/fig/presionEstimation/presion", r"src/data/fig/presionEstimation/errorPresion" + str(date) + ".avi", t.shape[0])
+videoCreater(r"src/data/fig/uEstimation/u", r"src/data/fig/uEstimation/errorU" + str(date) + ".avi", t.shape[0])
+videoCreater(r"src/data/fig/vEstimation/v", r"src/data/fig/vEstimation/errorV" + str(date) + ".avi", t.shape[0])
 
 for k in range(t.shape[0]):
     os.remove(r"src/data/fig/presionEstimation/presion" + str(k) + ".png")
     os.remove(r"src/data/fig/uEstimation/u" + str(k) + ".png")
     os.remove(r"src/data/fig/vEstimation/v" + str(k) + ".png")
+    
+    os.remove(r"src/data/fig/presionEstimation/errPresion" + str(k) + ".png")
+    os.remove(r"src/data/fig/uEstimation/errorU" + str(k) + ".png")
+    os.remove(r"src/data/fig/vEstimation/errorV" + str(k) + ".png")
+    
+
+fig = plt.figure()
+ax = fig.add_subplot(111)
+ax.plot(lossF, 'r--', lossD, 'bs', loss, 'g^')
+ax.set_xlabel('$n iter$')
+ax.set_ylabel('Loss')
+plt.yscale('log')
+ax.set_title('Loss evolution', fontsize = 10)
+fig.show()

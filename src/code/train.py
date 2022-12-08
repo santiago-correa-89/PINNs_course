@@ -4,6 +4,8 @@ import time
 import datetime
 import matplotlib.pyplot as plt
 
+import os
+
 from utilities import *
 
 np.random.seed(seed=1234)
@@ -204,9 +206,17 @@ if __name__ == "__main__":
     uPredict, vPredict, pPredict = predict(Xtest_tf, W, b)
     
     # Error estimation for prediction of NN
-    errU = np.mean(np.abs((Utest[:, 0:1] - uPredict.numpy())/Utest[:, 0:1]))*100 #np.linalg.norm(Utest[:, 0:1] - uPredict.numpy(), 2)/np.linalg.norm(Utest[:, 0:1], 2)
-    errV = np.mean(np.abs((Utest[:, 1:2] - vPredict.numpy())/Utest[:, 1:2]))*100
-    errP = np.mean(np.abs((Utest[:, 2:3] - pPredict.numpy())/Utest[:, 2:3]))*100
+    errU = (Utest[:, 0:1] - uPredict.numpy())/Utest[:, 0:1]
+    errV = (Utest[:, 1:2] - vPredict.numpy())/Utest[:, 1:2]
+    errP = (Utest[:, 2:3] - pPredict.numpy())/Utest[:, 2:3]
+    
+    np.save(r"results/error.npy", [errU, errV, errP])
+    
+    meanErrU = np.mean(np.abs(errU))*100 #np.linalg.norm(Utest[:, 0:1] - uPredict.numpy(), 2)/np.linalg.norm(Utest[:, 0:1], 2)
+    meanErrV = np.mean(np.abs(errV))*100
+    meanErrP = np.mean(np.abs(errP))*100
+    
+    np.save(r"results/Xtest.npy", Xtest)
     
     print("Percentual errors are {:.2f} in u, {:.2f} in v and {:.2f} in p.".format(errU, errV, errP))
     

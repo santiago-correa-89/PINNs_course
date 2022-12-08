@@ -4,6 +4,8 @@ import time
 import datetime
 import matplotlib.pyplot as plt
 
+import os
+
 from utilities import *
 
 np.random.seed(seed=1234)
@@ -72,7 +74,7 @@ def net_f(x, y, t, W, b, var):
 
 def train_step(W, b, X_d_train_tf, uvp_train_tf, X_f_train_tf, opt, var):
     # Select data for training
-    alp = 0.6
+    alp = 0.8
     x_d = X_d_train_tf[:, 0:1]
     y_d = X_d_train_tf[:, 1:2]
     t_d = X_d_train_tf[:, 2:3]
@@ -145,8 +147,8 @@ if __name__ == "__main__":
     # Defininig training parameters
     Ntest = 100
     Ndata = 40
-    Nfis = 10000 
-    Niter = 4000
+    Nfis = 8000 
+    Niter = 5000
     T=201
 
     # Defining Neural Network
@@ -171,7 +173,7 @@ if __name__ == "__main__":
     Xdata = np.delete(Xdata, idxTest, axis=0)
     Udata = np.delete(Udata, idxTest, axis=0)
     
-    idxTrain = select_idx(Xdata, Ndata, criterion='lhs')
+    idxTrain = select_idx(Xdata, Ndata, criterion='uni')
     X_d_train, U_d_train = conform_data(Xdata, Udata, idxTrain)
     
     ptsF = np.random.uniform([-5, -5], [15, 5], size=(Nfis, 2))  #interior fis points w no data
@@ -207,19 +209,27 @@ if __name__ == "__main__":
 
     # Save parameteres for postprocessing
     date = str(datetime.datetime.now().month)+str(datetime.datetime.now().day)+str(datetime.datetime.now().hour)+str(datetime.datetime.now().minute)
-    mySave('wResult' + date, W)
-    mySave('bResult' + date, b)
-    mySave('lossResult' + date, loss)
-    mySave('lossDResult' + date, lossD)
-    mySave('lossFResult' + date, lossF)
+    mySave('src/results/wResult' + date, W)
+    mySave('src/results/bResult' + date, b)
+    mySave('src/results/lossResult' + date, loss)
+    mySave('src/results/lossDResult' + date, lossD)
+    mySave('src/results/lossFResult' + date, lossF)
     
     # Prediction of NN for test points
     uPredict, vPredict, pPredict = predict(Xtest_tf, W, b)
     
-    # Error estimation for prediction of NN
-    errU = np.mean(np.abs((Utest[:, 0:1] - uPredict.numpy())/Utest[:, 0:1]))*100 #np.linalg.norm(Utest[:, 0:1] - uPredict.numpy(), 2)/np.linalg.norm(Utest[:, 0:1], 2)
-    errV = np.mean(np.abs((Utest[:, 1:2] - vPredict.numpy())/Utest[:, 1:2]))*100
-    errP = np.mean(np.abs((Utest[:, 2:3] - pPredict.numpy())/Utest[:, 2:3]))*100
+   # Error estimation for prediction of NN
+    errU = ((Utest[:, 0:1] - uPredict.numpy())/Utest[:, 0:1])*100
+    errV = ((Utest[:, 1:2] - vPredict.numpy())/Utest[:, 1:2])*100
+    errP = ((Utest[:, 2:3] - pPredict.numpy())/Utest[:, 2:3])*100
+    
+    np.save(r"results/error.npy", [errU, errV, errP])
+    
+    meanErrU = np.mean(np.abs(errU)) #np.linalg.norm(Utest[:, 0:1] - uPredict.numpy(), 2)/np.linalg.norm(Utest[:, 0:1], 2)
+    meanErrV = np.mean(np.abs(errV))
+    meanErrP = np.mean(np.abs(errP))
+    
+    np.save(r"results/Xtest.npy", Xtest)
     
     print("Percentual errors are {:.2f} in u, {:.2f} in v and {:.2f} in p.".format(errU, errV, errP))
     

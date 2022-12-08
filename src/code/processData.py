@@ -84,6 +84,7 @@ if __name__ == "__main__":
             heatmap, _, _, _, = nonuniform_imshow(x[:,0],x[:,1],u[:,2,j], 'Pressure Field')
             animation(heatmap, r"src/data/fig/Presion/p",j)
             plt.close()
+        
         date = str(datetime.datetime.now().month)+str(datetime.datetime.now().day)+str(datetime.datetime.now().hour)+str(datetime.datetime.now().minute)
         videoCreater(r"src/data/fig/velocidadU/u", r"src/data/fig/velocidadU/u"+ str(date) + ".avi", T)
         videoCreater(r"src/data/fig/velocidadV/v", r"src/data/fig/velocidadV/v" + str(date) + ".avi", T)
