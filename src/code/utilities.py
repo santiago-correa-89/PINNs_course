@@ -13,14 +13,14 @@ TimeStep = 0.01
 ############ animation and visualization ###########
 def nonuniform_imshow(x, y, z, aspect=1, cmap=plt.cm.rainbow):
   # Create regular grid
-  #x, y = np.meshgrid(x, y)
   xi, yi = np.linspace(x.min(), x.max(), 1000), np.linspace(y.min(), y.max(), 1000)
   xi, yi = np.meshgrid(xi, yi)
   # Interpolate missing data
   zi = griddata((x, y), z, (xi, yi), method='cubic')
-  fig, ax = plt.subplots()
-  hm = ax.imshow(zi, extent=[x.min(), x.max(), y.max(), y.min()])
-  plt.close() 
+  
+  _, ax = plt.subplots()
+  hm = ax.imshow(zi, interpolation='nearest', cmap=cmap, extent=[xi.min(), xi.max(), yi.max(), yi.min()])
+  plt.scatter(x, y)
   return hm, xi, yi, zi
 
 def animation(heatmap, folder, j, title):
@@ -31,7 +31,8 @@ def animation(heatmap, folder, j, title):
   plt.savefig(folder + str(j) + ".png")
   plt.ion()
   plt.show()
-  plt.pause(1)   
+  plt.pause(1)
+  plt.close()
   return 
 
 def videoCreater(folderIn, folderOut, T): 

@@ -10,7 +10,7 @@ from utilities import *
 
 if __name__ == "__main__": 
 
-    visualize = False
+    visualize = True
 
     T = 201
 
@@ -82,7 +82,7 @@ if __name__ == "__main__":
             plt.close()
             fig, ax = plt.subplots() 
             heatmap, _, _, _, = nonuniform_imshow(x[:,0],x[:,1],u[:,2,j], 'Pressure Field')
-            animation(heatmap, r"src/data/fig/Presion/p",j)
+            animation(heatmap, r"src/data/fig/Presion/p",j, 'P Field')
             plt.close()
         
         date = str(datetime.datetime.now().month)+str(datetime.datetime.now().day)+str(datetime.datetime.now().hour)+str(datetime.datetime.now().minute)

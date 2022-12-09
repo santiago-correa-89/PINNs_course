@@ -74,7 +74,7 @@ def net_f(x, y, t, W, b, var):
 
 def train_step(W, b, X_d_train_tf, uvp_train_tf, X_f_train_tf, opt, var):
     # Select data for training
-    alp = 0.8
+    alp = 0.7
     x_d = X_d_train_tf[:, 0:1]
     y_d = X_d_train_tf[:, 1:2]
     t_d = X_d_train_tf[:, 2:3]
@@ -106,7 +106,7 @@ def train_step(W, b, X_d_train_tf, uvp_train_tf, X_f_train_tf, opt, var):
         lossF = tf.reduce_mean(tf.square( fx )) \
         + tf.reduce_mean(tf.square( fy ))
         
-        loss = lossD*2*alp+ lossF*2*(1-alp)
+        loss = lossD*alp+ lossF*(1-alp)
 
     grad1 = tape4.gradient(loss, var)
 
@@ -147,8 +147,8 @@ if __name__ == "__main__":
     # Defininig training parameters
     Ntest = 100
     Ndata = 40
-    Nfis = 8000 
-    Niter = 5000
+    Nfis = 10000 
+    Niter = 4000
     T=201
 
     # Defining Neural Network

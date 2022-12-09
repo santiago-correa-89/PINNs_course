@@ -83,6 +83,7 @@ def train_step(W, b, X_d_train_tf, uvp_train_tf, X_f_train_tf, opt, I_Re):
     t_f = X_f_train_tf[:, 2:3]
     
     with tf.GradientTape(persistent=True) as tape4:
+        alp = 0.3
         tape4.watch([W, b])
         
         with tf.GradientTape(persistent=True) as tape5:
@@ -104,7 +105,7 @@ def train_step(W, b, X_d_train_tf, uvp_train_tf, X_f_train_tf, opt, I_Re):
         lossF = tf.reduce_mean(tf.square( fx )) \
         + tf.reduce_mean(tf.square( fy ))
         
-        loss = lossD + lossF
+        loss = alp*lossD + (1 - alp)*lossF
         
     grads = tape4.gradient(loss, train_vars(W,b))
     opt.apply_gradients(zip(grads, train_vars(W,b)))
@@ -134,9 +135,9 @@ if __name__ == "__main__":
     I_Re = nu/(Uinf*D)   
     noise = 0.0        
     Ntest = 100
-    Ndata = 40
-    Nfis = 5000 
-    Niter = 5000
+    Ndata = 30
+    Nfis = 10000 
+    Niter = 4000
     T=201
 
     # Defining Neural Network
@@ -161,7 +162,7 @@ if __name__ == "__main__":
     Xdata = np.delete(Xdata, idxTest, axis=0)
     Udata = np.delete(Udata, idxTest, axis=0)
     
-    idxTrain = select_idx(Xdata, Ndata, criterion='lhs')
+    idxTrain = select_idx(Xdata, Ndata, criterion='uni')
     X_d_train, U_d_train = conform_data(Xdata, Udata, idxTrain)
     
     ptsF = np.random.uniform([-5, -5], [15, 5], size=(Nfis, 2))  #interior fis points w no data
@@ -187,7 +188,7 @@ if __name__ == "__main__":
         loss.append(loss_)
         lossD.append(lossD_)
         lossF.append(lossF_)   
-        if(n %10 == 0):   
+        if(n %1000 == 0):   
             print(f"Iteration is: {n} and loss is: {loss_}")
         n+=1
 
@@ -196,11 +197,11 @@ if __name__ == "__main__":
 
     # Save parameteres for postprocessing
     date = str(datetime.datetime.now().month)+str(datetime.datetime.now().day)+str(datetime.datetime.now().hour)+str(datetime.datetime.now().minute)
-    mySave('wResult' + date, W)
-    mySave('bResult' + date, b)
-    mySave('lossResult' + date, loss)
-    mySave('lossDResult' + date, lossD)
-    mySave('lossFResult' + date, lossF)
+    mySave('src/results/30Samples/wResult' + date, W)
+    mySave('src/results/30Samples/bResult' + date, b)
+    mySave('src/results/30Samples/lossResult' + date, loss)
+    mySave('src/results/30Samples/lossDResult' + date, lossD)
+    mySave('src/results/30Samples/lossFResult' + date, lossF)
     
     # Prediction of NN for test points
     uPredict, vPredict, pPredict = predict(Xtest_tf, W, b)
@@ -210,15 +211,15 @@ if __name__ == "__main__":
     errV = (Utest[:, 1:2] - vPredict.numpy())/Utest[:, 1:2]
     errP = (Utest[:, 2:3] - pPredict.numpy())/Utest[:, 2:3]
     
-    np.save(r"results/error.npy", [errU, errV, errP])
+    np.save(r"src/results/30Samples/error.npy", [errU, errV, errP])
     
     meanErrU = np.mean(np.abs(errU))*100 #np.linalg.norm(Utest[:, 0:1] - uPredict.numpy(), 2)/np.linalg.norm(Utest[:, 0:1], 2)
     meanErrV = np.mean(np.abs(errV))*100
     meanErrP = np.mean(np.abs(errP))*100
     
-    np.save(r"results/Xtest.npy", Xtest)
+    np.save(r"src/results/30Samples/Xtest.npy", Xtest)
     
-    print("Percentual errors are {:.2f} in u, {:.2f} in v and {:.2f} in p.".format(errU, errV, errP))
+    print("Percentual errors are {:.2f} in u, {:.2f} in v and {:.2f} in p.".format(meanErrU, meanErrV, meanErrP))
     
     fig = plt.figure()
     ax = fig.add_subplot(111)
@@ -227,3 +228,5 @@ if __name__ == "__main__":
     ax.set_ylabel('Loss')
     ax.set_title('Loss evolution', fontsize = 10)
     fig.show()
+    
+print('hello world')
