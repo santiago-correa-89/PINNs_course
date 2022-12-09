@@ -24,11 +24,11 @@ error = np.load(r"src/results/30Samples/error.npy")
 Xtest = np.load(r"src/results/30Samples/Xtest.npy")
 
 # Load Data Xdata refers to spacial position of point, Udata is the Velocity field and Pressure fields for the points. 
-W = myLoad(r"src/results/30Samples/wResult1282034")
-b = myLoad(r"src/results/30Samples/bResult1282034")
-loss = myLoad(r"src/results/30Samples/lossResult1282034")
-lossF = myLoad(r"src/results/30Samples/lossFResult1282034")
-lossD = myLoad(r"src/results/30Samples/lossDResult1282034")
+W = myLoad(r"src/results/30Samples/wResult1282248")
+b = myLoad(r"src/results/30Samples/bResult1282248")
+loss = myLoad(r"src/results/30Samples/lossResult1282248")
+lossF = myLoad(r"src/results/30Samples/lossFResult1282248")
+lossD = myLoad(r"src/results/30Samples/lossDResult1282248")
 
 x = np.arange(-5, 15, 0.1)
 y = np.arange(-5, 5, 0.05)
@@ -52,7 +52,7 @@ for k in range(t.shape[0]):
     
     fig, ax = plt.subplots()  
     hm = ax.imshow(p.T, extent=[x.min(), x.max(), y.min(), y.max()])
-    animation(hm, r"src/data/fig/presionEstimation/presion", k, 'Pressure Field') 
+    animation(hm, r"src/data/fig/presionEstimation30Samples/presion", k, 'Pressure Field') 
     plt.close()
     
     # fig, ax = plt.subplots()
@@ -62,7 +62,7 @@ for k in range(t.shape[0]):
     
     fig, ax = plt.subplots()  
     hm = ax.imshow(u.T, extent=[x.min(), x.max(), y.min(), y.max()])
-    animation(hm, r"src/data/fig/uEstimation/u", k, 'U Field') 
+    animation(hm, r"src/data/fig/uEstimation30Samples/u", k, 'U Field') 
     plt.close()
     
     # fig, ax = plt.subplots()
@@ -72,7 +72,7 @@ for k in range(t.shape[0]):
         
     fig, ax = plt.subplots()  
     hm = ax.imshow(v.T, extent=[x.min(), x.max(), y.min(), y.max()])
-    animation(hm, r"src/data/fig/vEstimation/v", k, 'V Field') 
+    animation(hm, r"src/data/fig/vEstimation30Samples/v", k, 'V Field') 
     plt.close()
     
     # fig, ax = plt.subplots()
@@ -80,9 +80,9 @@ for k in range(t.shape[0]):
     # animation(hm, r"src/data/fig/vEstimation/errorV", k, 'Error V Field') 
     # plt.close()
 
-videoCreater(r"src/data/fig/presionEstimation/presion", r"src/data/fig/presionEstimation/presion" + str(date) + ".avi", t.shape[0])
-videoCreater(r"src/data/fig/uEstimation/u", r"src/data/fig/uEstimation/u" + str(date) + ".avi", t.shape[0])
-videoCreater(r"src/data/fig/vEstimation/v", r"src/data/fig/vEstimation/v" + str(date) + ".avi", t.shape[0])
+videoCreater(r"src/data/fig/presionEstimation30Samples/presion", r"src/data/fig/presionEstimation30Samples/presion" + str(date) + ".avi", t.shape[0])
+videoCreater(r"src/data/fig/uEstimation30Samples/u", r"src/data/fig/uEstimation30Samples/u" + str(date) + ".avi", t.shape[0])
+videoCreater(r"src/data/fig/vEstimation30Samples/v", r"src/data/fig/vEstimation30Samples/v" + str(date) + ".avi", t.shape[0])
 # videoCreater(r"src/data/fig/presionEstimation/presion", r"src/data/fig/presionEstimation/errorPresion" + str(date) + ".avi", t.shape[0])
 # videoCreater(r"src/data/fig/uEstimation/u", r"src/data/fig/uEstimation/errorU" + str(date) + ".avi", t.shape[0])
 # videoCreater(r"src/data/fig/vEstimation/v", r"src/data/fig/vEstimation/errorV" + str(date) + ".avi", t.shape[0])

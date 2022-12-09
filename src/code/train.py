@@ -135,7 +135,7 @@ if __name__ == "__main__":
     I_Re = nu/(Uinf*D)   
     noise = 0.0        
     Ntest = 100
-    Ndata = 30
+    Ndata = 10
     Nfis = 10000 
     Niter = 4000
     T=201
@@ -197,11 +197,11 @@ if __name__ == "__main__":
 
     # Save parameteres for postprocessing
     date = str(datetime.datetime.now().month)+str(datetime.datetime.now().day)+str(datetime.datetime.now().hour)+str(datetime.datetime.now().minute)
-    mySave('src/results/30Samples/wResult' + date, W)
-    mySave('src/results/30Samples/bResult' + date, b)
-    mySave('src/results/30Samples/lossResult' + date, loss)
-    mySave('src/results/30Samples/lossDResult' + date, lossD)
-    mySave('src/results/30Samples/lossFResult' + date, lossF)
+    mySave('src/results/10Samples/wResult' + date, W)
+    mySave('src/results/10Samples/bResult' + date, b)
+    mySave('src/results/10Samples/lossResult' + date, loss)
+    mySave('src/results/10Samples/lossDResult' + date, lossD)
+    mySave('src/results/10Samples/lossFResult' + date, lossF)
     
     # Prediction of NN for test points
     uPredict, vPredict, pPredict = predict(Xtest_tf, W, b)
@@ -211,13 +211,13 @@ if __name__ == "__main__":
     errV = (Utest[:, 1:2] - vPredict.numpy())/Utest[:, 1:2]
     errP = (Utest[:, 2:3] - pPredict.numpy())/Utest[:, 2:3]
     
-    np.save(r"src/results/30Samples/error.npy", [errU, errV, errP])
+    np.save(r"src/results/10Samples/error.npy", [errU, errV, errP])
     
     meanErrU = np.mean(np.abs(errU))*100 #np.linalg.norm(Utest[:, 0:1] - uPredict.numpy(), 2)/np.linalg.norm(Utest[:, 0:1], 2)
     meanErrV = np.mean(np.abs(errV))*100
     meanErrP = np.mean(np.abs(errP))*100
     
-    np.save(r"src/results/30Samples/Xtest.npy", Xtest)
+    np.save(r"src/results/10Samples/Xtest.npy", Xtest)
     
     print("Percentual errors are {:.2f} in u, {:.2f} in v and {:.2f} in p.".format(meanErrU, meanErrV, meanErrP))
     
