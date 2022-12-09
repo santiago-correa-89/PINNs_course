@@ -15,7 +15,7 @@ if __name__ == "__main__":
     T = 201
 
     Xtot = np.zeros((55456, 2))
-    Utot = np.zeros((55456, 3, T))
+    Utot = np.zeros((55456, 4, T))
 
     #Choose the vtu file
     for i in range(T):
@@ -49,6 +49,7 @@ if __name__ == "__main__":
         u = vtk_to_numpy(output.GetPointData().GetArray(0))
         v = vtk_to_numpy(output.GetPointData().GetArray(1))
         p = vtk_to_numpy(output.GetPointData().GetArray(2))
+        w = vtk_to_numpy(output.GetPointData().GetArray(3))
         
         if i == 0:
             Xtot[:,0] = x
@@ -57,6 +58,7 @@ if __name__ == "__main__":
         Utot[:,0,i] = u
         Utot[:,1,i] = v
         Utot[:,2,i] = p
+        Utot[:,3,i] = w
 
     # No need to save with duplicate points
     #np.save(r"src/data/VORT_DATA_VTU/Xtot.npy", Xtot)
@@ -66,34 +68,39 @@ if __name__ == "__main__":
     x, idxs = np.unique(Xtot, axis=0, return_index = True)
     u = Utot[idxs,:,:]
 
-    np.save(r"src/data/VORT_DATA_VTU/Xdata.npy", x)
-    np.save(r"src/data/VORT_DATA_VTU/Udata.npy", u)
+    np.save(r"src/data/vorticityTest/Xdata.npy", x)
+    np.save(r"src/data/vorticityTest/Udata.npy", u)
     
     # Create .png files for video animation
     if(visualize):
         for j in range(T):
             fig, ax = plt.subplots() 
-            heatmap, _, _, _, = nonuniform_imshow(x[:,0],x[:,1],u[:,0,j])
-            animation(heatmap, r"src/data/fig/velocidadU/u",j, 'U Field')
+            heatmap, _, _, _, = nonuniform_imshow(x[:,0], x[:,1], u[:,0,j])
+            animation(heatmap, r"src/data/vorticityTest/velocidadU/u", j, 'U Field')
             plt.close()
             fig, ax = plt.subplots() 
-            heatmap, _, _, _, = nonuniform_imshow(x[:,0],x[:,1],u[:,1,j])
-            animation(heatmap, r"src/data/fig/velocidadV/v",j, 'V Field')
+            heatmap, _, _, _, = nonuniform_imshow(x[:,0], x[:,1], u[:,1,j])
+            animation(heatmap, r"src/data/vorticityTest/velocidadV/v", j, 'V Field')
             plt.close()
             fig, ax = plt.subplots() 
-            heatmap, _, _, _, = nonuniform_imshow(x[:,0],x[:,1],u[:,2,j], 'Pressure Field')
-            animation(heatmap, r"src/data/fig/Presion/p",j, 'P Field')
+            heatmap, _, _, _, = nonuniform_imshow(x[:,0], x[:,1], u[:,2,j], 'Pressure Field')
+            animation(heatmap, r"src/data/vorticityTest/Presion/p", j, 'Pressure Field')
+            plt.close()
+            fig, ax = plt.subplots() 
+            heatmap, _, _, _, = nonuniform_imshow(x[:,0], x[:,1], u[:,3,j], 'Vorticity Field')
+            animation(heatmap, r"src/data/vorticityTest/Vorticity/w", j, 'Vorticity Field')
             plt.close()
         
         date = str(datetime.datetime.now().month)+str(datetime.datetime.now().day)+str(datetime.datetime.now().hour)+str(datetime.datetime.now().minute)
-        videoCreater(r"src/data/fig/velocidadU/u", r"src/data/fig/velocidadU/u"+ str(date) + ".avi", T)
-        videoCreater(r"src/data/fig/velocidadV/v", r"src/data/fig/velocidadV/v" + str(date) + ".avi", T)
-        videoCreater(r"src/data/fig/Presion/p", r"src/data/fig/Presion/p" + str(date) + ".avi", T)
+        videoCreater(r"src/data/vorticityTest/velocidadU/u", r"src/data/vorticityTest/velocidadU/u"+ str(date) + ".avi", T)
+        videoCreater(r"src/data/vorticityTest/velocidadV/v", r"src/data/vorticityTest/velocidadV/v" + str(date) + ".avi", T)
+        videoCreater(r"src/data/vorticityTest/Presion/p", r"src/data/vorticityTest/Presion/p" + str(date) + ".avi", T)
+        videoCreater(r"src/data/vorticityTest/Vorticity/w", r"src/data/vorticityTest/Vorticity/w" + str(date) + ".avi", T)
 
-        for k in range(T):
-            os.remove(r"src/data/fig/velocidadU/u" + str(k) + ".png")
-            os.remove(r"src/data/fig/velocidadV/v" + str(k) + ".png")
-            os.remove(r"src/data/fig/Presion/p" + str(k) + ".png")
+        # for k in range(T):
+        #     os.remove(r"src/data/velocidadU/u" + str(k) + ".png")
+        #     os.remove(r"src/data/velocidadV/v" + str(k) + ".png")
+        #     os.remove(r"src/data/Presion/p" + str(k) + ".png")
 
     
 

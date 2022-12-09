@@ -28,7 +28,6 @@ def DNN(X, W, b):
     lby = -5
     uby = 5
     yNorm = (2.0*(X[:, 1:2] - lby)/(uby - lby) - 1.0)
-    # tnp = X[:, 2:3].numpy()
     lbt = 0.0
     ubt = 2.0
     tNorm = (2.0*(X[:, 2:3] - lbt)/(ubt - lbt) - 1.0)       
@@ -60,6 +59,7 @@ def net_f(x, y, t, W, b, I_Re):
                 output = net_u(x, y, t, W, b)
                 psi = output[:,0:1]
                 p = output[:,1:2]
+                wz = output[:, 2:3]
        
             u = tape3.gradient(psi, y)
             v = -tape3.gradient(psi, x)
@@ -71,17 +71,24 @@ def net_f(x, y, t, W, b, I_Re):
         v_y = tape2.gradient(v, y)
         v_t = tape2.gradient(v, t)
         p_x = tape2.gradient(p, x)
-        p_y = tape2.gradient(p, y)    
+        p_y = tape2.gradient(p, y)
+        
+        w_x = tape2.gradient(wz, x)
+        w_y = tape2.gradient(wz, y)
+        w_t = tape2.gradient(wz, t)    
     
     u_xx = tape1.gradient(u_x, x)
     u_yy = tape1.gradient(u_y, y)
     v_xx = tape1.gradient(v_x, x)
     v_yy = tape1.gradient(v_y, y)
+    w_xx = tape1.gradient(w_x, x)
+    w_yy = tape1.gradient(w_y, y)
     
     del tape1
     
     fx = u_t + (u*u_x + v*u_y) + p_x - I_Re*(u_xx + u_yy)
     fy = v_t + (u*v_x + v*v_y) + p_y - I_Re*(v_xx + v_yy)
+    
     
     return fx, fy, u, v, p
 

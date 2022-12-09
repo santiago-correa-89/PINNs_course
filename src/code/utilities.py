@@ -18,9 +18,8 @@ def nonuniform_imshow(x, y, z, aspect=1, cmap=plt.cm.rainbow):
   # Interpolate missing data
   zi = griddata((x, y), z, (xi, yi), method='cubic')
   
-  _, ax = plt.subplots()
-  hm = ax.imshow(zi, interpolation='nearest', cmap=cmap, extent=[xi.min(), xi.max(), yi.max(), yi.min()])
-  plt.scatter(x, y)
+  fig, ax = plt.subplots()
+  hm = ax.imshow(zi, extent=[x.min(), x.max(), y.max(), y.min()])
   return hm, xi, yi, zi
 
 def animation(heatmap, folder, j, title):
