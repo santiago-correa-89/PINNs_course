@@ -93,7 +93,7 @@ def net_f(x, y, t, W, b, I_Re):
     fy = v_t + (u*v_x + v*v_y) + p_y - I_Re*(v_xx + v_yy)
     fw = w_t + u*w_x + v*w_y - I_Re*(w_xx + w_yy) 
     
-    return fx, fy, fw, u, v, p
+    return fx, fy, fw, u, v, p, w
 
 def train_step(W, b, X_d_train_tf, uvpw_train_tf, X_f_train_tf, opt, I_Re):
     # Select data for training
@@ -126,7 +126,7 @@ def train_step(W, b, X_d_train_tf, uvpw_train_tf, X_f_train_tf, opt, I_Re):
         
         del tape6   
         
-        fx, fy, fw, _, _, _ = net_f(x_f, y_f, t_f, W, b, I_Re)
+        fx, fy, fw, _, _, _, _ = net_f(x_f, y_f, t_f, W, b, I_Re)
         lossD =  tf.reduce_mean(tf.square(u - uvpw_train_tf[:,0:1])) \
         + tf.reduce_mean(tf.square(v - uvpw_train_tf[:,1:2])) \
         + tf.reduce_mean(tf.square(p - uvpw_train_tf[:,2:3])) \
@@ -172,9 +172,9 @@ if __name__ == "__main__":
     Uinf = 1
     I_Re = nu/(Uinf*D)   
     noise = 0.0        
-    Ntest = 200
-    Ndata = 100
-    Nfis = 10000 
+    Ntest = 100
+    Ndata = 40
+    Nfis = 5000 
     Niter = 4000
     T=201
 
@@ -226,7 +226,7 @@ if __name__ == "__main__":
         loss.append(loss_)
         lossD.append(lossD_)
         lossF.append(lossF_)   
-        if(n %1000 == 0):   
+        if(n %1 == 0):   
             print(f"Iteration is: {n} and loss is: {loss_}")
         n+=1
 
@@ -242,13 +242,13 @@ if __name__ == "__main__":
     mySave('src/results/vorticityTest/lossFResult' + date, lossF)
     
     # Prediction of NN for test points
-    uPredict, vPredict, pPredict = predict(Xtest_tf, W, b)
+    uPredict, vPredict, pPredict, wPredict = predict(Xtest_tf, W, b)
     
     # Error estimation for prediction of NN
     errU = (Utest[:, 0:1] - uPredict.numpy())/Utest[:, 0:1]
     errV = (Utest[:, 1:2] - vPredict.numpy())/Utest[:, 1:2]
     errP = (Utest[:, 2:3] - pPredict.numpy())/Utest[:, 2:3]
-    errW = (Utest[:, 3:4] - pPredict.numpy())/Utest[:, 3:4]
+    errW = (Utest[:, 3:4] - wPredict.numpy())/Utest[:, 3:4]
 
     
     np.save(r"src/results/vorticityTest/error.npy", [errU, errV, errP, errW])
@@ -256,10 +256,11 @@ if __name__ == "__main__":
     meanErrU = np.mean(np.abs(errU))*100 #np.linalg.norm(Utest[:, 0:1] - uPredict.numpy(), 2)/np.linalg.norm(Utest[:, 0:1], 2)
     meanErrV = np.mean(np.abs(errV))*100
     meanErrP = np.mean(np.abs(errP))*100
+    meanErrW = np.mean(np.abs(errW))*100
     
     np.save(r"src/results/vorticityTest/Xtest.npy", Xtest)
     
-    print("Percentual errors are {:.2f} in u, {:.2f} in v and {:.2f} in p.".format(meanErrU, meanErrV, meanErrP))
+    print("Percentual errors are {:.2f} in u, {:.2f} in v, {:.2f} in p and {:.2f} in w.".format(meanErrU, meanErrV, meanErrP, meanErrW))
     
     fig = plt.figure()
     ax = fig.add_subplot(111)

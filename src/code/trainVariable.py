@@ -21,7 +21,18 @@ def hyper_initial(size):
 
 # Neural Network 
 def DNN(X, W, b):
-    A = X
+    
+    lbx = -5.0
+    ubx = 15
+    xNorm = (2.0*(X[:, 0:1] - lbx)/(ubx - lbx) - 1.0)
+    lby = -5
+    uby = 5
+    yNorm = (2.0*(X[:, 1:2] - lby)/(uby - lby) - 1.0)
+    lbt = 0.0
+    ubt = 2.0
+    tNorm = (2.0*(X[:, 2:3] - lbt)/(ubt - lbt) - 1.0)       
+    A = tf.concat([xNorm, yNorm, tNorm],1)
+    
     L = len(W)
     for i in range(L-1):
         A = tf.tanh(tf.add(tf.matmul(A, W[i]), b[i]))
@@ -74,7 +85,7 @@ def net_f(x, y, t, W, b, var):
 
 def train_step(W, b, X_d_train_tf, uvp_train_tf, X_f_train_tf, opt, var):
     # Select data for training
-    alp = 0.7
+    alp = 0.6
     x_d = X_d_train_tf[:, 0:1]
     y_d = X_d_train_tf[:, 1:2]
     t_d = X_d_train_tf[:, 2:3]
@@ -109,7 +120,6 @@ def train_step(W, b, X_d_train_tf, uvp_train_tf, X_f_train_tf, opt, var):
         loss = lossD*alp+ lossF*(1-alp)
 
     grad1 = tape4.gradient(loss, var)
-
     opt.apply_gradients(zip([grad1], [var]))
             
     grads = tape4.gradient(loss, train_vars(W,b))
