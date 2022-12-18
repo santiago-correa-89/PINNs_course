@@ -249,13 +249,6 @@ if __name__ == "__main__":
     
     print("Percentual errors are {:.2f} in u, {:.2f} in v and {:.2f} in p.".format(meanErrU, meanErrV, meanErrP))
     
-    fig = plt.figure()
-    ax = fig.add_subplot(111)
-    ax.plot(lossF, 'r--', lossU, 'k^', lossV, 'r^', lossP, 'b^', loss, 'bs')
-    ax.set_xlabel('$n iter$')
-    ax.set_ylabel('Loss')
-    plt.yscale('log')
-    ax.set_title('Loss evolution 40 Data Samples Normalized', fontsize = 10)
-    fig.show()
+
     
 print('hello world')

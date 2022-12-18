@@ -20,17 +20,17 @@ def evalNN(X, W, b):
     return phi, p
 
 # Load Error 
-error = np.load(r"src/results/40Samples_Norm/error.npy")
-Xtest = np.load(r"src/results/40Samples_Norm/Xtest.npy")
+error = np.load(r"src/results/test/error.npy")
+Xtest = np.load(r"src/results/test/Xtest.npy")
 
 # Load Data Xdata refers to spacial position of point, Udata is the Velocity field and Pressure fields for the points. 
-W = myLoad(r"src/results/40Samples_Norm/wResult1292257")
-b = myLoad(r"src/results/40Samples_Norm/bResult1292257")
-loss = myLoad(r"src/results/40Samples_Norm/lossResult1292257")
-lossU = myLoad(r"src/results/40Samples_Norm/lossUResult1292257")
-lossV = myLoad(r"src/results/40Samples_Norm/lossVResult1292257")
-lossP = myLoad(r"src/results/40Samples_Norm/lossPResult1292257")
-lossF = myLoad(r"src/results/40Samples_Norm/lossFResult1292257")
+W = myLoad(r"src/results/test/wResult12181450")
+b = myLoad(r"src/results/test/bResult12181450")
+loss = myLoad(r"src/results/test/lossResult12181450")
+lossU = myLoad(r"src/results/test/lossUResult12181450")
+lossV = myLoad(r"src/results/test/lossVResult12181450")
+lossP = myLoad(r"src/results/test/lossPResult12181450")
+lossF = myLoad(r"src/results/test/lossFResult12181450")
 
 x = np.arange(-5, 15, 0.1)
 y = np.arange(-5, 5, 0.05)
@@ -54,7 +54,7 @@ for k in range(t.shape[0]):
     
     fig, ax = plt.subplots()  
     hm = ax.imshow(p.T, extent=[x.min(), x.max(), y.min(), y.max()])
-    animation(hm, r"src/results/40Samples_Norm/pEstimation/presion", k, 'Pressure Field') 
+    animation(hm, r"src/results/test/pEstimation/presion", k, 'Pressure Field') 
     plt.close()
     
     # fig, ax = plt.subplots()
@@ -64,7 +64,7 @@ for k in range(t.shape[0]):
     
     fig, ax = plt.subplots()  
     hm = ax.imshow(u.T, extent=[x.min(), x.max(), y.min(), y.max()])
-    animation(hm, r"src/results/40Samples_Norm/uEstimation/u", k, 'U Field') 
+    animation(hm, r"src/results/test/uEstimation/u", k, 'U Field') 
     plt.close()
     
     # fig, ax = plt.subplots()
@@ -74,7 +74,7 @@ for k in range(t.shape[0]):
         
     fig, ax = plt.subplots()  
     hm = ax.imshow(v.T, extent=[x.min(), x.max(), y.min(), y.max()])
-    animation(hm, r"src/results/40Samples_Norm/vEstimation/v", k, 'V Field') 
+    animation(hm, r"src/results/test/vEstimation/v", k, 'V Field') 
     plt.close()
     
     # fig, ax = plt.subplots()
@@ -82,9 +82,9 @@ for k in range(t.shape[0]):
     # animation(hm, r"src/data/fig/vEstimation/errorV", k, 'Error V Field') 
     # plt.close()
 
-videoCreater(r"src/results/40Samples_Norm/pEstimation/presion", r"src/results/40Samples_Norm/pEstimation/presion" + str(date) + ".avi", t.shape[0])
-videoCreater(r"src/results/40Samples_Norm/uEstimation/u", r"src/results/40Samples_Norm/uEstimation/u" + str(date) + ".avi", t.shape[0])
-videoCreater(r"src/results/40Samples_Norm/vEstimation/v", r"src/results/40Samples_Norm/vEstimation/v" + str(date) + ".avi", t.shape[0])
+videoCreater(r"src/results/test/pEstimation/presion", r"src/results/test/pEstimation/presion" + str(date) + ".avi", t.shape[0])
+videoCreater(r"src/results/test/uEstimation/u", r"src/results/test/uEstimation/u" + str(date) + ".avi", t.shape[0])
+videoCreater(r"src/results/test/vEstimation/v", r"src/results/test/vEstimation/v" + str(date) + ".avi", t.shape[0])
 # videoCreater(r"src/data/fig/presionEstimation/presion", r"src/data/fig/presionEstimation/errorPresion" + str(date) + ".avi", t.shape[0])
 # videoCreater(r"src/data/fig/uEstimation/u", r"src/data/fig/uEstimation/errorU" + str(date) + ".avi", t.shape[0])
 # videoCreater(r"src/data/fig/vEstimation/v", r"src/data/fig/vEstimation/errorV" + str(date) + ".avi", t.shape[0])
