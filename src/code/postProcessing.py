@@ -32,8 +32,8 @@ lossV = myLoad(r"src/results/test/lossVResult12181450")
 lossP = myLoad(r"src/results/test/lossPResult12181450")
 lossF = myLoad(r"src/results/test/lossFResult12181450")
 
-x = np.arange(-5, 15, 0.1)
-y = np.arange(-5, 5, 0.05)
+x = np.arange(-5, 15, 0.01)
+y = np.arange(-5, 5, 0.005)
 t = np.arange(0, 2, 0.01)
 
 grid = arangeData(x, y, t)

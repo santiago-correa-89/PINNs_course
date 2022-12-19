@@ -265,6 +265,16 @@ if __name__ == "__main__":
     # Load Data Xdata refers to spacial position of point, Udata is the Velocity field and Pressure fields for the points. 
     Xdata = np.load(r"src/data/vorticityTest/Xdata.npy")
     Udata = np.load(r"src/data/vorticityTest/Udata.npy")
+    
+    # Boundary Conditions
+    _, upperBConditionIdx = spatial.KDTree(Xdata).query(Xdata[(Xdata[:,1] == 5)])
+    XupBC, UpBC = conform_data(Xdata, Udata, upperBConditionIdx, T=None)
+
+    _, underBConditionIdx = spatial.KDTree(Xdata).query(Xdata[(Xdata[:,1] == .5)])
+    XunBC, UnBC = conform_data(Xdata, Udata, underBConditionIdx, T=None)
+    
+    _, inletBConditionIdx = spatial.KDTree(Xdata).query(Xdata[(Xdata[:,0] == -5)])
+    XinBC, InBC = conform_data(Xdata, Udata, inletBConditionIdx, T=None)
 
     # Select a number of point to test the NN
     idxTest = select_idx(Xdata, Ntest, criterion='uni')
@@ -278,6 +288,8 @@ if __name__ == "__main__":
     
     idxTrain = select_idx(Xdata, Ndata, criterion='lhs')
     XdataTrain, UdataTrain = conform_data(Xdata, Udata, idxTrain)
+    XdataTrain = np.concatenate((XunBC, XupBC, XinBC, XdataTrain))
+    UdataTrain = np.concatenate((UnBC, UpBC, InBC, UdataTrain))
     
     ptsF = np.random.uniform([-5, -5], [15, 5], size=(Nfis, 2))  #interior fis points w no data
     Xphisic = np.c_[ptsF, 0.01*np.random.randint(T, size=Nfis) ]

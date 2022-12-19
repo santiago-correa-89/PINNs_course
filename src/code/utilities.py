@@ -62,7 +62,7 @@ def myLoad(route):
     return variable
 
 ################# Data resizing and manipulation #######################
-def select_idx(Xdata,N_u,criterion='fem'):
+def select_idx(Xdata, N_u, criterion='fem'):
     xmin = -5
     xmax = 15
     ymin = -5
@@ -102,7 +102,7 @@ def circle_points(N_f, T=201):
 
 #OrganizeGrid
 def arangeData(x, y, t, T=None):
-    if T==None:
+    if T == None:
         X = x.shape[0]
         Y = y.shape[0]
         T = t.shape[0]
