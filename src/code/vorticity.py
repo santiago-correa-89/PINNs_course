@@ -173,7 +173,7 @@ if __name__ == "__main__":
     I_Re = nu/(Uinf*D)   
     noise = 0.0        
     Ntest = 200
-    Ndata = 100
+    Ndata = 40
     Nfis = 10000 
     Niter = 4000
     T=201
@@ -226,7 +226,7 @@ if __name__ == "__main__":
         loss.append(loss_)
         lossD.append(lossD_)
         lossF.append(lossF_)   
-        if(n %1000 == 0):   
+        if(n %10 == 0):   
             print(f"Iteration is: {n} and loss is: {loss_}")
         n+=1
 

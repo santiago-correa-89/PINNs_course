@@ -12,6 +12,11 @@ np.random.seed(seed=1234)
 tf.random.set_seed(1234)
 tf.config.experimental.enable_tensor_float_32_execution(False)
 
+lbx = -5.0
+ubx = 15
+lby = -5
+uby = 5
+
 # Initalization of Network
 def hyper_initial(size):
     in_dim = size[0]
@@ -22,16 +27,11 @@ def hyper_initial(size):
 # Neural Network 
 def DNN(X, W, b):
     
-    lbx = -5.0
-    ubx = 15
+
     xNorm = (2.0*(X[:, 0:1] - lbx)/(ubx - lbx) - 1.0)
-    lby = -5
-    uby = 5
     yNorm = (2.0*(X[:, 1:2] - lby)/(uby - lby) - 1.0)
-    lbt = 0.0
-    ubt = 2.0
-    tNorm = (2.0*(X[:, 2:3] - lbt)/(ubt - lbt) - 1.0)       
-    A = tf.concat([xNorm, yNorm, tNorm],1)
+  
+    A = tf.concat([xNorm, yNorm, X[:, 2:3]],1)
 
     L = len(W)
     
@@ -59,7 +59,6 @@ def net_f(x, y, t, W, b, I_Re):
                 output = net_u(x, y, t, W, b)
                 psi = output[:,0:1]
                 p = output[:,1:2]
-                wz = output[:, 2:3]
        
             u = tape3.gradient(psi, y)
             v = -tape3.gradient(psi, x)
@@ -71,24 +70,17 @@ def net_f(x, y, t, W, b, I_Re):
         v_y = tape2.gradient(v, y)
         v_t = tape2.gradient(v, t)
         p_x = tape2.gradient(p, x)
-        p_y = tape2.gradient(p, y)
-        
-        w_x = tape2.gradient(wz, x)
-        w_y = tape2.gradient(wz, y)
-        w_t = tape2.gradient(wz, t)    
+        p_y = tape2.gradient(p, y)    
     
     u_xx = tape1.gradient(u_x, x)
     u_yy = tape1.gradient(u_y, y)
     v_xx = tape1.gradient(v_x, x)
     v_yy = tape1.gradient(v_y, y)
-    w_xx = tape1.gradient(w_x, x)
-    w_yy = tape1.gradient(w_y, y)
     
     del tape1
     
     fx = u_t + (u*u_x + v*u_y) + p_x - I_Re*(u_xx + u_yy)
     fy = v_t + (u*v_x + v*v_y) + p_y - I_Re*(v_xx + v_yy)
-    
     
     return fx, fy, u, v, p
 
@@ -154,10 +146,10 @@ if __name__ == "__main__":
     Uinf = 1
     I_Re = nu/(Uinf*D)   
     noise = 0.0        
-    Ntest = 200
-    Ndata = 40
-    Nfis = 10000 
-    Niter = 4000
+    Ntest = 100
+    Ndata = 10
+    Nfis = 5000 
+    Niter = 5000
     T=201
 
     # Defining Neural Network
@@ -167,8 +159,8 @@ if __name__ == "__main__":
     b = [tf.Variable(tf.zeros([1, layers[l]])) for l in range(1, L)] 
 
     # Load Data Xdata refers to spacial position of point, Udata is the Velocity field and Pressure fields for the points. 
-    Xdata = np.load(r"src/data/VORT_DATA_VTU/Xdata.npy")
-    Udata = np.load(r"src/data/VORT_DATA_VTU/Udata.npy")
+    Xdata = np.load(r"src/data/vorticityTest/Xdata.npy")
+    Udata = np.load(r"src/data/vorticityTest/Udata.npy")
 
     # Select a number of point to test the NN
     idxTest = select_idx(Xdata, Ntest, criterion='uni')
@@ -207,8 +199,8 @@ if __name__ == "__main__":
         loss_, lossD_, lossF_, W, b = train_step(W, b, X_d_train_tf, U_d_train_tf, X_f_train_tf, optimizer, I_Re)
         loss.append(loss_)
         lossD.append(lossD_)
-        lossF.append(lossF_)   
-        if(n %1000 == 0):   
+        lossF.append(lossF_)  
+        if(n %100 == 0):   
             print(f"Iteration is: {n} and loss is: {loss_}")
         n+=1
 
@@ -217,11 +209,11 @@ if __name__ == "__main__":
 
     # Save parameteres for postprocessing
     date = str(datetime.datetime.now().month)+str(datetime.datetime.now().day)+str(datetime.datetime.now().hour)+str(datetime.datetime.now().minute)
-    mySave('src/results/40SamplesNorm/wResult' + date, W)
-    mySave('src/results/40SamplesNorm/bResult' + date, b)
-    mySave('src/results/40SamplesNorm/lossResult' + date, loss)
-    mySave('src/results/40SamplesNorm/lossDResult' + date, lossD)
-    mySave('src/results/40SamplesNorm/lossFResult' + date, lossF)
+    mySave('src/results/10SamplesNorm/wResult' + date, W)
+    mySave('src/results/10SamplesNorm/bResult' + date, b)
+    mySave('src/results/10SamplesNorm/lossResult' + date, loss)
+    mySave('src/results/10SamplesNorm/lossDResult' + date, lossD)
+    mySave('src/results/10SamplesNorm/lossFResult' + date, lossF)
     
     # Prediction of NN for test points
     uPredict, vPredict, pPredict = predict(Xtest_tf, W, b)
@@ -231,23 +223,14 @@ if __name__ == "__main__":
     errV = (Utest[:, 1:2] - vPredict.numpy())/Utest[:, 1:2]
     errP = (Utest[:, 2:3] - pPredict.numpy())/Utest[:, 2:3]
     
-    np.save(r"src/results/40SamplesNorm/error.npy", [errU, errV, errP])
+    np.save(r"src/results/10SamplesNorm/error.npy", [errU, errV, errP])
     
-    meanErrU = np.mean(np.abs(errU))*100 #np.linalg.norm(Utest[:, 0:1] - uPredict.numpy(), 2)/np.linalg.norm(Utest[:, 0:1], 2)
+    meanErrU = np.mean(np.abs(errU))*100
     meanErrV = np.mean(np.abs(errV))*100
     meanErrP = np.mean(np.abs(errP))*100
     
-    np.save(r"src/results/40SamplesNorm/Xtest.npy", Xtest)
+    np.save(r"src/results/10SamplesNorm/Xtest.npy", Xtest)
     
     print("Percentual errors are {:.2f} in u, {:.2f} in v and {:.2f} in p.".format(meanErrU, meanErrV, meanErrP))
-    
-    fig = plt.figure()
-    ax = fig.add_subplot(111)
-    ax.plot(lossF, 'r--', lossD, 'bs', loss, 'g^')
-    ax.set_xlabel('$n iter$')
-    ax.set_ylabel('Loss')
-    plt.yscale('log')
-    ax.set_title('Loss evolution 40 Data Samples Normalized', fontsize = 10)
-    fig.show()
     
 print('hello world')

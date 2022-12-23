@@ -20,15 +20,18 @@ def evalNN(X, W, b):
     return phi, p
 
 # Load Error 
-error = np.load(r"src/results/30SamplesNorm/error.npy")
-Xtest = np.load(r"src/results/30SamplesNorm/Xtest.npy")
+error = np.load(r'src/results/test/error.npy')
+Xtest = np.load(r'src/results/test/Xtest.npy')
 
 # Load Data Xdata refers to spacial position of point, Udata is the Velocity field and Pressure fields for the points. 
-W = myLoad(r"src/results/30SamplesNorm/wResult1215132")
-b = myLoad(r"src/results/30SamplesNorm/bResult1215132")
-loss = myLoad(r"src/results/30SamplesNorm/lossResult1215132")
-lossF = myLoad(r"src/results/30SamplesNorm/lossFResult1215132")
-lossD = myLoad(r"src/results/30SamplesNorm/lossDResult1215132")
+W = myLoad(r'src/results/test/wResult')
+b = myLoad(r'src/results/test/bResult')
+loss = myLoad(r'src/results/test/lossResult')
+lossF = myLoad(r'src/results/test/lossFResult')
+lossU = myLoad(r'src/results/test/lossUResult')
+lossV = myLoad(r'src/results/test/lossVResult')
+lossP = myLoad(r'src/results/test/lossPResult')
+lossD = lossU + lossV + lossP
 
 x = np.arange(-5, 15, 0.1)
 y = np.arange(-5, 5, 0.05)
@@ -53,7 +56,7 @@ for k in range(t.shape[0]):
     
     fig, ax = plt.subplots()  
     hm = ax.imshow(p.T, extent=[x.min(), x.max(), y.min(), y.max()])
-    animation(hm, r"src/results/30SamplesNorm/pEstimation/presion", k, 'Pressure Field') 
+    animation(hm, r'src/results/test/pEstimation/p', k, 'Pressure Field') 
     plt.close()
     
     # fig, ax = plt.subplots()
@@ -63,7 +66,7 @@ for k in range(t.shape[0]):
     
     fig, ax = plt.subplots()  
     hm = ax.imshow(u.T, extent=[x.min(), x.max(), y.min(), y.max()])
-    animation(hm, r"src/results/30SamplesNorm/uEstimation/u", k, 'U Field') 
+    animation(hm, r'src/results/test/uEstimation/u', k, 'U Field') 
     plt.close()
     
     # fig, ax = plt.subplots()
@@ -73,7 +76,7 @@ for k in range(t.shape[0]):
         
     fig, ax = plt.subplots()  
     hm = ax.imshow(v.T, extent=[x.min(), x.max(), y.min(), y.max()])
-    animation(hm, r"src/results/30SamplesNorm/vEstimation/v", k, 'V Field') 
+    animation(hm, r'src/results/test/vEstimation/v', k, 'V Field') 
     plt.close()
     
     # fig, ax = plt.subplots()
@@ -86,9 +89,9 @@ for k in range(t.shape[0]):
     #animation(hm, r"src/results/vorticityTest/wEstimation/w", k, 'w Field') 
     #plt.close()
 
-videoCreater(r"src/results/30SamplesNorm/pEstimation/presion", r"src/results/30SamplesNorm/pEstimation/presion" + str(date) + ".avi", t.shape[0])
-videoCreater(r"src/results/30SamplesNorm/uEstimation/u", r"src/results/30SamplesNorm/uEstimation/u" + str(date) + ".avi", t.shape[0])
-videoCreater(r"src/results/30SamplesNorm/vEstimation/v", r"src/results/30SamplesNorm/vEstimation/v" + str(date) + ".avi", t.shape[0])
+videoCreater(r'src/results/test/pEstimation/p', r'src/results/test/pEstimation/p' + str(date) + ".avi", t.shape[0])
+videoCreater(r'src/results/test/uEstimation/u', r'src/results/test/uEstimation/u' + str(date) + ".avi", t.shape[0])
+videoCreater(r'src/results/test/vEstimation/v', r'src/results/test/vEstimation/v' + str(date) + ".avi", t.shape[0])
 #videoCreater(r"src/results/vorticityTest/wEstimation/w", r"src/results/vorticityTest/wEstimation/w" + str(date) + ".avi", t.shape[0])
 
 # for k in range(t.shape[0]):
