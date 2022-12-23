@@ -95,7 +95,7 @@ def train_step(W, b, X_d_train_tf, uvp_train_tf, X_f_train_tf, opt, I_Re):
     t_f = X_f_train_tf[:, 2:3]
     
     with tf.GradientTape(persistent=True) as tape4:
-        alp = 0.3
+        alp = 0.6
         tape4.watch([W, b])
         
         with tf.GradientTape(persistent=True) as tape5:
@@ -110,19 +110,19 @@ def train_step(W, b, X_d_train_tf, uvp_train_tf, X_f_train_tf, opt, I_Re):
         del tape5    
         
         fx, fy, _, _, _ = net_f(x_f, y_f, t_f, W, b, I_Re)
-        lossD =  tf.reduce_mean(tf.square(u - uvp_train_tf[:,0:1])) \
-        + tf.reduce_mean(tf.square(v - uvp_train_tf[:,1:2])) \
-        + tf.reduce_mean(tf.square(p - uvp_train_tf[:,2:3]))
+        lossU = tf.reduce_mean(tf.square(u - uvp_train_tf[:,0:1]))
+        lossV = tf.reduce_mean(tf.square(v - uvp_train_tf[:,1:2]))
+        lossP = tf.reduce_mean(tf.square(p - uvp_train_tf[:,2:3]))
                     
         lossF = tf.reduce_mean(tf.square( fx )) \
         + tf.reduce_mean(tf.square( fy ))
         
-        loss = alp*lossD + (1 - alp)*lossF
+        loss = alp*(lossU + lossV + lossP) + (1 - alp)*lossF
         
     grads = tape4.gradient(loss, train_vars(W,b))
     opt.apply_gradients(zip(grads, train_vars(W,b)))
     del tape4
-    return loss, lossD, lossF, W, b
+    return loss, lossU, lossV, lossP, lossF, W, b
 
 def predict(Xtest, W, b):
     x = Xtest[:, 0:1]
@@ -146,10 +146,10 @@ if __name__ == "__main__":
     Uinf = 1
     I_Re = nu/(Uinf*D)   
     noise = 0.0        
-    Ntest = 100
-    Ndata = 10
-    Nfis = 5000 
-    Niter = 5000
+    Ntest = 200
+    Ndata = 40
+    Nfis = 10000 
+    Niter = 4000
     T=201
 
     # Defining Neural Network
@@ -192,15 +192,17 @@ if __name__ == "__main__":
     start_time = time.time()
     n=0
     loss = []
-    lossD = []
+    lossU = []
+    lossV = []
+    lossP = []
     lossF = []
 
     while n <= Niter:
-        loss_, lossD_, lossF_, W, b = train_step(W, b, X_d_train_tf, U_d_train_tf, X_f_train_tf, optimizer, I_Re)
+        loss_, lossU_, lossV_, lossP_, lossF_, W, b = train_step(W, b, X_d_train_tf, U_d_train_tf, X_f_train_tf, optimizer, I_Re)
         loss.append(loss_)
         lossD.append(lossD_)
-        lossF.append(lossF_)  
-        if(n %100 == 0):   
+        lossF.append(lossF_)   
+        if(n %1000 == 0):   
             print(f"Iteration is: {n} and loss is: {loss_}")
         n+=1
 
@@ -209,11 +211,11 @@ if __name__ == "__main__":
 
     # Save parameteres for postprocessing
     date = str(datetime.datetime.now().month)+str(datetime.datetime.now().day)+str(datetime.datetime.now().hour)+str(datetime.datetime.now().minute)
-    mySave('src/results/10SamplesNorm/wResult' + date, W)
-    mySave('src/results/10SamplesNorm/bResult' + date, b)
-    mySave('src/results/10SamplesNorm/lossResult' + date, loss)
-    mySave('src/results/10SamplesNorm/lossDResult' + date, lossD)
-    mySave('src/results/10SamplesNorm/lossFResult' + date, lossF)
+    mySave('src/results/40SamplesNorm/wResult' + date, W)
+    mySave('src/results/40SamplesNorm/bResult' + date, b)
+    mySave('src/results/40SamplesNorm/lossResult' + date, loss)
+    mySave('src/results/40SamplesNorm/lossDResult' + date, lossD)
+    mySave('src/results/40SamplesNorm/lossFResult' + date, lossF)
     
     # Prediction of NN for test points
     uPredict, vPredict, pPredict = predict(Xtest_tf, W, b)
@@ -223,14 +225,23 @@ if __name__ == "__main__":
     errV = (Utest[:, 1:2] - vPredict.numpy())/Utest[:, 1:2]
     errP = (Utest[:, 2:3] - pPredict.numpy())/Utest[:, 2:3]
     
-    np.save(r"src/results/10SamplesNorm/error.npy", [errU, errV, errP])
+    np.save(r"src/results/40SamplesNorm/error.npy", [errU, errV, errP])
     
     meanErrU = np.mean(np.abs(errU))*100
     meanErrV = np.mean(np.abs(errV))*100
     meanErrP = np.mean(np.abs(errP))*100
     
-    np.save(r"src/results/10SamplesNorm/Xtest.npy", Xtest)
+    np.save(r"src/results/40SamplesNorm/Xtest.npy", Xtest)
     
     print("Percentual errors are {:.2f} in u, {:.2f} in v and {:.2f} in p.".format(meanErrU, meanErrV, meanErrP))
+    
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    ax.plot(lossF, 'r--', lossD, 'bs', loss, 'g^')
+    ax.set_xlabel('$n iter$')
+    ax.set_ylabel('Loss')
+    plt.yscale('log')
+    ax.set_title('Loss evolution 40 Data Samples Normalized', fontsize = 10)
+    fig.show()
     
 print('hello world')
