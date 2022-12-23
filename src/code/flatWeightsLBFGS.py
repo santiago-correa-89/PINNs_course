@@ -99,18 +99,18 @@ def lbfgs_minimize(trainable_variables, build_loss, previous_optimizer_results=N
     initial_position = None
     if previous_optimizer_results is None:
         initial_position = func.to_flat_weights(trainable_variables)
-        results = tfp.optimizer.lbfgs_minimize(
-            func,
-            initial_position=initial_position,
-            previous_optimizer_results=previous_optimizer_results,
-            num_correction_pairs=100,
-            tolerance=1e-8,
-            x_tolerance=0,
-            f_relative_tolerance=0,
-            max_iterations=5, #15000
-            parallel_iterations=1,
-            max_line_search_iterations=50,
-            )
+    results = tfp.optimizer.lbfgs_minimize(
+        func,
+        initial_position=initial_position,
+        previous_optimizer_results=previous_optimizer_results,
+        num_correction_pairs=100,
+        tolerance=1e-8,
+        x_tolerance=0,
+        f_relative_tolerance=0,
+        max_iterations=2000,
+        parallel_iterations=1,
+        max_line_search_iterations=50,
+    )
     # The final optimized parameters are in results.position.
     # Set them back to the variables.
     func.set_flat_weights(results.position)
