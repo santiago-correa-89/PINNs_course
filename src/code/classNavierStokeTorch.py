@@ -1,31 +1,52 @@
-import tensorflow as tf
-import tensorflow_probability as tfp
+## Import torch libraries
+import torch
+import torch.autograd as autograd         # computation graph
+from torch import Tensor                  # tensor node in the computation graph
+import torch.nn as nn                     # neural networks
+import torch.optim as optim               # optimizers e.g. gradient descent, ADAM, etc.
+
+## Import matplotlib libraries
+import matplotlib.pyplot as plt
+import matplotlib.gridspec as gridspec
+from mpl_toolkits.axes_grid1 import make_axes_locatable
+from mpl_toolkits.mplot3d import Axes3D
+import matplotlib.ticker
+
+## Import scipy and scikit learn libraries
+import scipy.io
+from sklearn.model_selection import train_test_split
+from scipy.interpolate import griddata
+from scipy import spatial
+from pyDOE import lhs          #Latin Hypercube Sampling
+
 import numpy as np
 import time
 import datetime
-import matplotlib.pyplot as plt
-
-from scipy.interpolate import griddata
-import matplotlib.pyplot as plt
-from PIL import Image 
-
-from scipy import spatial
-from pyDOE import lhs
 
 import pickle
 import os
 
 from utilities import *
-from flatWeightsLBFGS import *
 
-np.random.seed(seed=1234)
-tf.random.set_seed(1234)
-tf.config.experimental.enable_tensor_float_32_execution(False)
+#Set default dtype to float32
+torch.set_default_dtype(torch.float)
+#PyTorch random number generator
+torch.manual_seed(1234)
+# Random number generators in other libraries
+np.random.seed(1234)
+
+# Device configuration
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+print(device)
+
+if device == 'cuda': 
+    print(torch.cuda.get_device_name())
 
 class NavierStoke:
     #Initialize the class
     
-    def __init__(self, XdataTrain, UdataTrain, Xphisic, Xtest, Utest, xBC, uBC, layers, lr, Re, alpha, folder, nIterAdam, niterLBFGS):
+    def __init__(self, XdataTrain, UdataTrain, Xphisic, Xtest, Utest, xBoundaryC, dataBoundaryC, layers, lr, Re, alpha, folder, nIterAdam, niterLBFGS):
         
         self.nIterAdam = nIterAdam
         self.niterLBFGS = niterLBFGS
@@ -35,60 +56,54 @@ class NavierStoke:
         self.lb = XdataTrain.min(0)
         self.ub = XdataTrain.max(0)
         
-        #Boundary Conditions
-        self.xBC = xBC
-        self.uBC = uBC
+        self.xTrain_tf = torch.from_numpy(XdataTrain[:, 0:1])
+        self.yTrain_tf = torch.from_numpy(XdataTrain[:, 1:2])
+        self.tTrain_tf = torch.from_numpy(XdataTrain[:, 2:3])
+        self.XdataTrain_tf = torch.from_numpy(XdataTrain)
         
-        #Training data Points
-        self.xTrain_tf = tf.convert_to_tensor(XdataTrain[:, 0:1], dtype=tf.float32)
-        self.yTrain_tf = tf.convert_to_tensor(XdataTrain[:, 1:2], dtype=tf.float32)
-        self.tTrain_tf = tf.convert_to_tensor(XdataTrain[:, 2:3], dtype=tf.float32)
-        self.XdataTrain_tf = tf.convert_to_tensor(XdataTrain, dtype=tf.float32)
+        self.uTrain_tf = torch.from_numpy(UdataTrain[:, 0:1])
+        self.vTrain_tf = torch.from_numpy(UdataTrain[:, 1:2])
+        self.pTrain_tf = torch.from_numpy(UdataTrain[:, 2:3])
+        self.UdataTrain_tf = torch.from_numpy(UdataTrain)
         
-        #Training data Variables
-        self.uTrain = UdataTrain[:, 0:1]
-        self.vTrain = UdataTrain[:, 1:2]
-        self.pTrain = UdataTrain[:, 2:3]
-        self.UdataTrain = tf.convert_to_tensor(UdataTrain, dtype=tf.float32)
+        self.xPhisic_tf = torch.from_numpy(Xphisic[:, 0:1])
+        self.yPhisic_tf = torch.from_numpy(Xphisic[:, 1:2])
+        self.tPhisic_tf = torch.from_numpy(Xphisic[:, 2:3])
+        self.Xphisics_tf = torch.from_numpy(Xphisic)
         
-        #Physics points for training
-        self.xPhisic_tf = tf.convert_to_tensor(Xphisic[:, 0:1], dtype=tf.float32)
-        self.yPhisic_tf = tf.convert_to_tensor(Xphisic[:, 1:2], dtype=tf.float32)
-        self.tPhisic_tf = tf.convert_to_tensor(Xphisic[:, 2:3], dtype=tf.float32)
-        self.Xphisics_tf = tf.convert_to_tensor(Xphisic, dtype=tf.float32)
+        self.xTest_tf = torch.from_numpy(Xtest[:, 0:1])
+        self.yTest_tf = torch.from_numpy(Xtest[:, 1:2])
+        self.tTest_tf = torch.from_numpy(Xtest[:, 2:3])
+        self.XTest_tf = torch.from_numpy(Xtest)
         
-        #Test points
-        self.xTest_tf = tf.convert_to_tensor(Xtest[:, 0:1], dtype=tf.float32)
-        self.yTest_tf = tf.convert_to_tensor(Xtest[:, 1:2], dtype=tf.float32)
-        self.tTest_tf = tf.convert_to_tensor(Xtest[:, 2:3], dtype=tf.float32)
-        self.XTest_tf = tf.convert_to_tensor(Xtest, dtype=tf.float32)
-        
-        #Test data for training
         self.uTest = Utest[:, 0:1]
         self.vTest = Utest[:, 1:2]
         self.pTest = Utest[:, 2:3]
         
-        #NN structure
         self.layers = layers
+        
         self.W, self.b = self.InitializeNN(self.layers)
         
-        #NN first optimizer
         self.optimizer_adam = tf.optimizers.Adam(learning_rate=lr)
         
         start_time = time.time()
         n=0
         self.loss = []
         self.lossU = []
+        self.lossV = []
+        self.lossP = []
         self.lossF = []
 
         while n <= self.nIterAdam:
-            loss_, lossU_, lossF_, self.W, self.b = self.train_step(self.W, self.b)
+            loss_, lossU_, lossV_, lossP_, lossF_, self.W, self.b = self.train_step(self.W, self.b)
             self.loss.append(loss_)
             self.lossU.append(lossU_)
+            self.lossV.append(lossV_)
+            self.lossP.append(lossP_)
             self.lossF.append(lossF_)   
         
             if(n %100 == 0):   
-                print(f"Iteration is: {n} and loss is: {loss_}, {lossF_}, {lossU_}")
+                print(f"Iteration is: {n} and loss is: {loss_}, {lossF_}")
             n+=1
         
         # Create the LossAndFlatGradient instance
@@ -96,6 +111,7 @@ class NavierStoke:
         
         # Call lbfgs_minimize to optimize the neural network
         initial_weights = loss_and_gradient.to_flat_weights(self.train_vars(self.W, self.b))
+        
         optimizer = tfp.optimizer.lbfgs_minimize(loss_and_gradient, initial_position=initial_weights, 
         num_correction_pairs=100,
         tolerance=1e-8,
@@ -106,6 +122,8 @@ class NavierStoke:
         max_line_search_iterations=50)
         
         result = optimizer.set_flat_weights(optimizer.position)
+
+        
         print(optimizer)
         
         elapsed = time.time() - start_time                
@@ -118,6 +136,8 @@ class NavierStoke:
         mySave(folder + '/bResult' + date, self.b)
         mySave(folder + '/lossResult' + date, self.loss)
         mySave(folder + '/lossUResult' + date, self.lossU)
+        mySave(folder + '/lossVResult' + date, self.lossV)
+        mySave(folder + '/lossPResult' + date, self.lossP)
         mySave(folder + '/lossFResult' + date, self.lossF)
         
         # Prediction of NN for test points
@@ -140,11 +160,11 @@ class NavierStoke:
         
         fig = plt.figure()
         ax = fig.add_subplot(111)
-        ax.plot(self.lossF, 'r--', self.lossU, 'k^', self.loss, 'bs')
+        ax.plot(self.lossF, 'r--', self.lossU, 'k^', self.lossV, 'r^', self.lossP, 'b^', self.loss, 'bs')
         ax.set_xlabel('$n iter$')
         ax.set_ylabel('Loss')
         plt.yscale('log')
-        ax.set_title('Loss evolution', fontsize = 10)
+        ax.set_title('Loss evolution 40 Data Samples Normalized', fontsize = 10)
         fig.show()
     
     # Initalization of Network
@@ -229,19 +249,19 @@ class NavierStoke:
         
             fx, fy = self.net_f(self.xPhisic_tf, self.yPhisic_tf, self.tPhisic_tf, W, b)
             
-            lossU = tf.reduce_mean(tf.square(u - self.uTrain)) \
-            + tf.reduce_mean(tf.square(v - self.vTrain)) \
-            + tf.reduce_mean(tf.square(p - self.pTrain))
+            lossU = tf.reduce_mean(tf.square(u - self.uTrain_tf))
+            lossV = tf.reduce_mean(tf.square(v - self.vTrain_tf))
+            lossP = tf.reduce_mean(tf.square(p - self.pTrain_tf))
                     
             lossF = tf.reduce_mean(tf.square( fx )) + tf.reduce_mean(tf.square( fy ))
-            
-            loss = self.alpha*(lossU) + (1 - self.alpha)*lossF
+        
+            loss = self.alpha*(lossU + lossV + lossP) + (1 - self.alpha)*lossF
         
         grads = tape4.gradient(loss, self.train_vars(W,b))
         self.optimizer_adam.apply_gradients(zip(grads, self.train_vars(W,b)))
         del tape4
         
-        return loss, lossU, lossF, W, b
+        return loss, lossU, lossV, lossP, lossF, W, b
     
     def predict(self, W, b):
     
@@ -280,47 +300,43 @@ class NavierStoke:
         
             fx, fy = self.net_f(self.xPhisic_tf, self.yPhisic_tf, self.tPhisic_tf, W, b)
             
-            #Training Loss
             lossU = tf.reduce_mean(tf.square(u - self.uTrain_tf))
             lossV = tf.reduce_mean(tf.square(v - self.vTrain_tf))
             lossP = tf.reduce_mean(tf.square(p - self.pTrain_tf))
-
-            #Training BC
-            lossBC = tf.reduce_mean(tf.square( - self.uTrain_tf))
-            
+                    
             lossF = tf.reduce_mean(tf.square( fx )) + tf.reduce_mean(tf.square( fy ))    
             
             loss = self.alpha*(lossU + lossV + lossP) + (1 - self.alpha)*lossF
         
             return loss
         
-    # def lbfgs_minimizeNS(self, trainable_variables, build_loss, previous_optimizer_results=None):
-    #     """TensorFlow interface for tfp.optimizer.lbfgs_minimize.
-    #     Args:
-    #     trainable_variables: Trainable variables, also used as the initial position.
-    #     build_loss: A function to build the loss function expression.
-    #     previous_optimizer_results
-    #     """
-    #     func = LossAndFlatGradient(trainable_variables, build_loss)
-    #     initial_position = None
-    #     if previous_optimizer_results is None:
-    #         initial_position = func.to_flat_weights(trainable_variables)
-    #         results = tfp.optimizer.lbfgs_minimize(
-    #         func,
-    #         initial_position=initial_position,
-    #         previous_optimizer_results=previous_optimizer_results,
-    #         num_correction_pairs = 100,
-    #         tolerance = 1e-8,
-    #         x_tolerance = 0,
-    #         f_relative_tolerance = 0,
-    #         max_iterations = self.niterLBFGS,
-    #         parallel_iterations = 1,
-    #         max_line_search_iterations = 50,
-    #     )
+    def lbfgs_minimizeNS(self, trainable_variables, build_loss, previous_optimizer_results=None):
+        """TensorFlow interface for tfp.optimizer.lbfgs_minimize.
+        Args:
+        trainable_variables: Trainable variables, also used as the initial position.
+        build_loss: A function to build the loss function expression.
+        previous_optimizer_results
+        """
+        func = LossAndFlatGradient(trainable_variables, build_loss)
+        initial_position = None
+        if previous_optimizer_results is None:
+            initial_position = func.to_flat_weights(trainable_variables)
+            results = tfp.optimizer.lbfgs_minimize(
+            func,
+            initial_position=initial_position,
+            previous_optimizer_results=previous_optimizer_results,
+            num_correction_pairs = 100,
+            tolerance = 1e-8,
+            x_tolerance = 0,
+            f_relative_tolerance = 0,
+            max_iterations = self.niterLBFGS,
+            parallel_iterations = 1,
+            max_line_search_iterations = 50,
+        )
     # The final optimized parameters are in results.position.
     # Set them back to the variables.
-        # func.set_flat_weights(results)
-        # return results
+        func.set_flat_weights(results)
+        return results
 
 if __name__ == "__main__": 
 # Defining variables
@@ -350,7 +366,7 @@ if __name__ == "__main__":
     _, upperBConditionIdx = spatial.KDTree(Xdata).query(Xdata[(Xdata[:,1] == 5)])
     XupBC, UpBC = conform_data(Xdata, Udata, upperBConditionIdx, T=None)
 
-    _, underBConditionIdx = spatial.KDTree(Xdata).query(Xdata[(Xdata[:,1] == .5)])
+    _, underBConditionIdx = spatial.KDTree(Xdata).query(Xdata[(Xdata[:,1] == -5)])
     XunBC, UnBC = conform_data(Xdata, Udata, underBConditionIdx, T=None)
     
     _, inletBConditionIdx = spatial.KDTree(Xdata).query(Xdata[(Xdata[:,0] == -5)])
