@@ -293,10 +293,10 @@ if __name__ == "__main__":
     Re = nu/(Uinf*D)   
     noise = 0.0        
     Ntest = 200
-    Ndata = 200
+    Ndata = 40
     Nfis = 5000 
-    nIterAdam = 5
-    niterLBFGS = 5
+    nIterAdam = 5000
+    niterLBFGS = 5000
     T=201
     
     # Defining alpha value
@@ -344,14 +344,14 @@ if __name__ == "__main__":
     XdataTrain = np.concatenate((XunBC, XupBC, XinBC, XdataTrain))
     UdataTrain = np.concatenate((UnBC, UpBC, InBC, UdataTrain))
     
-    ptsF = np.random.uniform([-5, -5], [15, 5], size=(Nfis, 2))  #interior fis points w no data
+    ptsF = np.random.uniform([-1, -3], [15, 3], size=(Nfis, 2))  #interior fis points w no data
     Xphisic = np.c_[ptsF, 0.01*np.random.randint(T, size=Nfis) ]
     Xphisic = np.vstack([Xphisic, circle_points(Nfis)]) #border fis points w no data
     Xphisic = np.vstack([Xphisic, XdataTrain]) #eval fis in data points
 
     lr = 1e-3
     
-    folder = r'src/results/test1'
+    folder = r'src/results/test40'
 
     #Set of evaluation points
     x = np.arange(-5, 15.1, 0.1)
