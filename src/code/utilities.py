@@ -68,12 +68,12 @@ def select_idx(Xdata, N_u, criterion='fem'):
     ymin = -5
     ymax = 5
     if(criterion=='fem'): #random sampling in fem domain. more chances where finer grid
-        idx = np.random.choice(Xdata.shape[0],N_u, replace=False)
+        idx = np.random.choice(Xdata.shape[0], N_u, replace=False)
     if(criterion=='uni'): #random sampling in variable space. uniform (x,y) in ([-5,15],[-5,5])
         pts = np.random.uniform([xmin, ymin], [xmax,ymax], size=(N_u,2))
         _, idx = spatial.KDTree(Xdata).query(pts) 
     if(criterion=='lhs'):
-        samps = lhs(2,N_u) #returns in range [0,1]x[0,1]. Rescale
+        samps = lhs(2, N_u) #returns in range [0,1]x[0,1]. Rescale
         samps[:,0]*=(xmax-xmin)
         samps[:,0]+=xmin
         samps[:,1]*=(ymax-ymin)
