@@ -151,8 +151,6 @@ class NavierStoke:
         self.Estimation = self.net_u(self.grid_tf[:, 0:1], self.grid_tf[:, 1:2], self.grid_tf[:, 2:3], self.W, self.b)
         
         Processing(xGrid, yGrid, tGrid, self.Estimation, self.loss, self.lossF, self.lossU, folder, self.date)
-
-        print('Hello World')
     
     # Initalization of Network
     def hyper_initial(self, size):
@@ -293,10 +291,10 @@ if __name__ == "__main__":
     Re = nu/(Uinf*D)   
     noise = 0.0        
     Ntest = 200
-    Ndata = 40
+    Ndata = 100
     Nfis = 5000 
     nIterAdam = 5000
-    niterLBFGS = 5000
+    niterLBFGS = 8000
     T=201
     
     # Defining alpha value
@@ -341,8 +339,8 @@ if __name__ == "__main__":
     
     idxTrain = select_idx(Xdata, Ndata, criterion='fem')
     XdataTrain, UdataTrain = conform_data(Xdata, Udata, idxTrain)
-    XdataTrain = np.concatenate((XunBC, XupBC, XinBC, XdataTrain))
-    UdataTrain = np.concatenate((UnBC, UpBC, InBC, UdataTrain))
+    XdataTrain = np.concatenate((XunBC, XupBC, XinBC, XcyBC, XdataTrain))
+    UdataTrain = np.concatenate((UnBC, UpBC, InBC, CyBC, UdataTrain))
     
     ptsF = np.random.uniform([-1, -3], [15, 3], size=(Nfis, 2))  #interior fis points w no data
     Xphisic = np.c_[ptsF, 0.01*np.random.randint(T, size=Nfis) ]
@@ -351,7 +349,7 @@ if __name__ == "__main__":
 
     lr = 1e-3
     
-    folder = r'src/results/test40'
+    folder = r'src/results/100samples'
 
     #Set of evaluation points
     x = np.arange(-5, 15.1, 0.1)
