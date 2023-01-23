@@ -291,10 +291,11 @@ if __name__ == "__main__":
     Re = nu/(Uinf*D)   
     noise = 0.0        
     Ntest = 200
-    Ndata = 100
-    Nfis = 5000 
+    Ndata = 40
+    Nfis = 15000
+    Ncyl = 10000
     nIterAdam = 5000
-    niterLBFGS = 8000
+    niterLBFGS = 50000
     T=201
     
     # Defining alpha value
@@ -321,9 +322,10 @@ if __name__ == "__main__":
     angle = np.pi*np.random.uniform(0, 2, Nfis)
     pts = np.array([r*np.cos(angle), r*np.sin(angle)]).T
     _, idx = spatial.KDTree(Xdata).query(pts) 
-    idx =  np.unique(idx)
-    XcyBC, CyBC = conform_data(Xdata, Udata, idx, T=None)
+    idxCy =  np.unique(idx)
+    XcyBC, CyBC = conform_data(Xdata, Udata, idxCy, T=None)
 
+    idxBC = np.concatenate((underBConditionIdx, inletBConditionIdx, upperBConditionIdx, idxCy), axis=0, out=None)
     xBC = np.concatenate((XunBC, XinBC, XupBC, XcyBC), axis=0, out=None)
     uBC = np.concatenate((UnBC, InBC, UpBC, CyBC), axis=0, out=None) 
 
@@ -337,19 +339,18 @@ if __name__ == "__main__":
     Xdata = np.delete(Xdata, idxTest, axis=0)
     Udata = np.delete(Udata, idxTest, axis=0)
     
-    idxTrain = select_idx(Xdata, Ndata, criterion='fem')
+    idxTrain = select_idx(Xdata, Ndata, criterion='lhs')
     XdataTrain, UdataTrain = conform_data(Xdata, Udata, idxTrain)
     XdataTrain = np.concatenate((XunBC, XupBC, XinBC, XcyBC, XdataTrain))
     UdataTrain = np.concatenate((UnBC, UpBC, InBC, CyBC, UdataTrain))
     
-    ptsF = np.random.uniform([-1, -3], [15, 3], size=(Nfis, 2))  #interior fis points w no data
+    ptsF = np.random.uniform([-5, -5], [15, 5], size=(Nfis, 2))  #interior fis points w no data
     Xphisic = np.c_[ptsF, 0.01*np.random.randint(T, size=Nfis) ]
-    Xphisic = np.vstack([Xphisic, circle_points(Nfis)]) #border fis points w no data
     Xphisic = np.vstack([Xphisic, XdataTrain]) #eval fis in data points
 
     lr = 1e-3
     
-    folder = r'src/results/100samples'
+    folder = r'src/results/40Samples'
 
     #Set of evaluation points
     x = np.arange(-5, 15.1, 0.1)
