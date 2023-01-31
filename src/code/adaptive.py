@@ -16,7 +16,7 @@ import pickle
 import os
 
 from utilities import *
-from flatWeightsLBFGS import *
+#from flatWeightsLBFGS import *
 from postProcessing import *
 
 np.random.seed(seed=1234)
@@ -32,7 +32,6 @@ class NavierStoke:
         self.N_f = X_f.shape[0]
         self.N_b = X_b.shape[0]
         self.N_i = X_i.shape[0]
-        #self.alpha = alpha
         self.Re = Re
         self.lb = X_d.min(0)
         self.ub = X_d.max(0)
@@ -59,11 +58,9 @@ class NavierStoke:
         self.xBound_tf = tf.convert_to_tensor(X_b[:, 0:1], dtype=tf.float32)
         self.yBound_tf = tf.convert_to_tensor(X_b[:, 1:2], dtype=tf.float32)
         self.tBound_tf = tf.convert_to_tensor(X_b[:, 2:3], dtype=tf.float32)
-        self.Xbound_tf = tf.convert_to_tensor(X_b, dtype=tf.float32)
         self.uBound = U_b[:, 0:1]
         self.vBound = U_b[:, 1:2]
         self.pBound = U_b[:, 2:3]
-        self.UBound = tf.convert_to_tensor(U_b, dtype=tf.float32)
         
         #Initial points for training
         self.xInit_tf = tf.convert_to_tensor(X_i[:, 0:1], dtype=tf.float32)
@@ -73,7 +70,6 @@ class NavierStoke:
         self.uInit = U_i[:, 0:1]
         self.vInit = U_i[:, 1:2]
         self.pInit = U_i[:, 2:3]
-        self.UInit = tf.convert_to_tensor(U_i, dtype=tf.float32)
 
         #Test points
         self.xTest_tf = tf.convert_to_tensor(Xtest[:, 0:1], dtype=tf.float32)
@@ -250,7 +246,27 @@ class NavierStoke:
        
             u = tape5.gradient(psi, self.yTrain_tf)
             v = -tape5.gradient(psi, self.xTrain_tf)
-            del tape5    
+            del tape5
+
+            with tf.GradientTape(persistent=True) as tape6:
+                tape6.watch([self.xBound_tf, self.yBound_tf, self.tBound_tf])
+                output = self.net_u(self.xBound_tf, self.yBound_tf, self.tBound_tf, W, b)
+                psi_B = output[:, 0:1]
+                p_B = output[:, 1:2]
+       
+            u_B = tape6.gradient(psi_B, self.yBound_tf)
+            v_B = -tape6.gradient(psi_B, self.xBound_tf)
+            del tape6
+
+            with tf.GradientTape(persistent=True) as tape7:
+                tape7.watch([self.xInit_tf, self.yInit_tf, self.tInit_tf])
+                output = self.net_u(self.xInit_tf, self.yInit_tf, self.tInit_tf, W, b)
+                psi_I = output[:, 0:1]
+                p_I = output[:, 1:2]
+       
+            u_I = tape7.gradient(psi_I, self.yInit_tf)
+            v_I = -tape7.gradient(psi_I, self.xInit_tf)
+            del tape7 
         
             fx, fy = self.net_f(self.xPhisic_tf, self.yPhisic_tf, self.tPhisic_tf, W, b)
             
@@ -259,8 +275,14 @@ class NavierStoke:
             + tf.reduce_mean(tf.square(p - self.pTrain))
                     
             lossF = tf.reduce_mean(tf.square( lambda_f*fx )) + tf.reduce_mean(tf.square( lambda_f*fy ))
-            lossB = tf.reduce_mean(tf.square( lambda_b*(u - self.u_b) )) + tf.reduce_mean(tf.square( lambda_b*(v - self.v_b) )) + tf.reduce_mean(tf.square( lambda_b*(p - self.p_b) ))
-            lossI = tf.reduce_mean(tf.square( lambda_i*(u - self.u_i) )) + tf.reduce_mean(tf.square( lambda_i*(v - self.v_i) )) + tf.reduce_mean(tf.square( lambda_i*(p - self.p_i) ))
+
+            lossB = tf.reduce_mean(tf.square( lambda_b*(u_B - self.uBound) )) \
+            + tf.reduce_mean(tf.square( lambda_b*(v_B - self.vBound) )) \
+            + tf.reduce_mean(tf.square( lambda_b*(p_B - self.pBound )))
+
+            lossI = tf.reduce_mean(tf.square( lambda_i*(u_I - self.uInit) )) \
+            + tf.reduce_mean(tf.square( lambda_i*(v_I - self.vInit) )) \
+            + tf.reduce_mean(tf.square( lambda_i*(p_I - self.pInit) ))
 
             loss = lossU + lossF + lossB + lossI
         
@@ -298,21 +320,20 @@ if __name__ == "__main__":
     noise = 0.0        
     Ntest = 200
     Ndata = 40
+    Ninit = 1000
     Nfis = 15000
     Ncyl = 10000
     nIterAdam = 20000
-    #niterLBFGS = 50000
-    T=201
-    tInit = 15
     
-    # Defining alpha value
-    #alpha = 0.7
+    T=201
+    tInit = 15 # Initial time
+
     # Defining Neural Network
-    layers = [3, 20, 20, 20, 20, 20, 20, 20, 20, 2]
+    layers = [3]+6*[64]+[2]
 
     # Load Data Xdata refers to spacial position of point, Udata is the Velocity field and Pressure fields for the points. 
     Xdata = np.load(r"src/data/vorticityTest/Xdata.npy")
-    Udata = np.load(r"src/data/vorticityTest/Udata.npy")
+    Udata = np.load(r"src/data/vorticityTest/Udata.npy")[:,:,tInit:T]
     
     # Boundary Conditions
     _, upperBConditionIdx = spatial.KDTree(Xdata).query(Xdata[(Xdata[:,1] == 5)])
@@ -333,35 +354,35 @@ if __name__ == "__main__":
     XcyBC, CyBC = conform_data(Xdata, Udata, idxCy, T=None)
 
     idxBC = np.concatenate((underBConditionIdx, inletBConditionIdx, upperBConditionIdx, idxCy), axis=0, out=None)
-    xBC = np.concatenate((XunBC, XinBC, XupBC, XcyBC), axis=0, out=None)
-    uBC = np.concatenate((UnBC, InBC, UpBC, CyBC), axis=0, out=None) 
+    X_bc = np.concatenate((XunBC, XinBC, XupBC, XcyBC), axis=0, out=None)
+    U_bc = np.concatenate((UnBC, InBC, UpBC, CyBC), axis=0, out=None) 
+
+    # Initial Conditions
+    idxIni = select_idx(Xdata, Ninit, criterion='uni')
+    X_ini = Xdata[idxIni,:]
+    X_ini = np.c_[X_ini, 0.01*np.random.randint(T-tInit, size=Ninit) ]
+    U_ini = Udata[idxIni,:,0]
 
     # Select a number of point to test the NN
     idxTest = select_idx(Xdata, Ntest, criterion='uni')
     Xtest, Utest = conform_data(Xdata, Udata, idxTest)
-    #Xtest = Xtest[(Utest[:,0]>0.01)*(Utest[:,1]>0.01)*(Utest[:,2]>0.01)] # Filter to avoide data (u, v, p) near zero
-    #Utest = Utest[(Utest[:,0]>0.01)*(Utest[:,1]>0.01)*(Utest[:,2]>0.01)] # Filter to avoide data (u, v, p) near zero
 
-    # Remove index used for test
-    #Xdata = np.delete(Xdata, idxTest, axis=0)
-    #Udata = np.delete(Udata, idxTest, axis=0)
-    
     idxTrain = select_idx(Xdata, Ndata, criterion='lhs')
     XdataTrain, UdataTrain = conform_data(Xdata, Udata, idxTrain)
     XdataTrain = np.concatenate((XunBC, XupBC, XinBC, XcyBC, XdataTrain))
     UdataTrain = np.concatenate((UnBC, UpBC, InBC, CyBC, UdataTrain))
     
     ptsF = np.random.uniform([-5, -5], [15, 5], size=(Nfis, 2))  #interior fis points w no data
-    X_f = np.c_[ptsF, 0.01*np.random.randint(T, size=Nfis) ]
-    X_f = np.vstack([X_f, XdataTrain]) #eval fis in data points
+    X_f = np.c_[ptsF, 0.01*np.random.randint(T-tInit, size=Nfis) ]
+    #X_f = np.vstack([X_f, XdataTrain]) #eval fis in data points
 
     lr = 1e-3
     
-    folder = r'src/results/40Samples'
+    folder = r'src/results/adaptive'
 
     #Set of evaluation points
     x = np.arange(-5, 15.1, 0.1)
     y = np.arange(-5, 5.05, 0.05)
-    t = np.arange(0, 2.01, 0.01)
-
-    model = NavierStoke(XdataTrain, UdataTrain, X_f, Xtest, Utest, x, y, t, layers, lr, Re, folder, nIterAdam)
+    t = np.arange(0, (T-tInit)*0.01, 0.01)
+    
+    model = NavierStoke(XdataTrain, UdataTrain, X_f, X_bc, U_bc, X_ini, U_ini, Xtest, Utest, x, y, t, layers, lr, Re, folder, nIterAdam)
