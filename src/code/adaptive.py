@@ -92,8 +92,11 @@ class NavierStoke:
         self.lambda_f, self.lambda_b, self.lambda_i = self.Initialize_mults(self.N_f, self.N_b, self.N_i)
         
         #NN first optimizer
-        self.optimizer_adam = tf.optimizers.Adam(learning_rate=lr)
-        
+        self.optimizer_adam_nn = tf.optimizers.Adam(learning_rate=lr)
+        self.optimizer_adam_f = tf.optimizers.Adam(learning_rate=lr)
+        self.optimizer_adam_b = tf.optimizers.Adam(learning_rate=lr)
+        self.optimizer_adam_i = tf.optimizers.Adam(learning_rate=lr)
+
         start_time = time.time()
         n=0
         self.loss = []
@@ -235,6 +238,7 @@ class NavierStoke:
 
 
     def train_step(self, W, b,lambda_f, lambda_b, lambda_i):
+        #self.optimizer_adam.build([W, b, lambda_f, lambda_b, lambda_i])
         with tf.GradientTape(persistent=True) as tape4:
             tape4.watch([W, b, lambda_f, lambda_b, lambda_i])
         
@@ -290,10 +294,11 @@ class NavierStoke:
         grads_f = tape4.gradient(loss, lambda_f)
         grads_b = tape4.gradient(loss, lambda_b)
         grads_i = tape4.gradient(loss, lambda_i)
-        self.optimizer_adam.apply_gradients(zip(grads, self.train_vars_nn(W,b)))
-        self.optimizer_adam.apply_gradients(zip([-grads_f], [lambda_f]))
-        self.optimizer_adam.apply_gradients(zip([-grads_b], [lambda_b]))
-        self.optimizer_adam.apply_gradients(zip([-grads_i], [lambda_i]))
+        self.optimizer_adam_nn.apply_gradients(zip(grads, self.train_vars_nn(W,b)))
+        self.optimizer_adam_f.apply_gradients(zip([-grads_f], [lambda_f]))
+        self.optimizer_adam_b.apply_gradients(zip([-grads_b], [lambda_b]))
+        self.optimizer_adam_i.apply_gradients(zip([-grads_i], [lambda_i]))
+
         del tape4
         
         return loss, lossU, lossF, lossB, lossI, W, b, lambda_f, lambda_b, lambda_i
@@ -323,7 +328,7 @@ if __name__ == "__main__":
     Ninit = 1000
     Nfis = 15000
     Ncyl = 10000
-    nIterAdam = 20000
+    nIterAdam = 20#000
     
     T=201
     tInit = 15 # Initial time
@@ -337,12 +342,15 @@ if __name__ == "__main__":
     
     # Boundary Conditions
     _, upperBConditionIdx = spatial.KDTree(Xdata).query(Xdata[(Xdata[:,1] == 5)])
+    upperBConditionIdx = np.random.choice(upperBConditionIdx, 20, replace=False)
     XupBC, UpBC = conform_data(Xdata, Udata, upperBConditionIdx, T=None)
 
     _, underBConditionIdx = spatial.KDTree(Xdata).query(Xdata[(Xdata[:,1] == -5)])
+    underBConditionIdx = np.random.choice(underBConditionIdx, 20, replace=False)
     XunBC, UnBC = conform_data(Xdata, Udata, underBConditionIdx, T=None)
     
     _, inletBConditionIdx = spatial.KDTree(Xdata).query(Xdata[(Xdata[:,0] == -5)])
+    inletBConditionIdx = np.random.choice(inletBConditionIdx, 20, replace=False)
     XinBC, InBC = conform_data(Xdata, Udata, inletBConditionIdx, T=None)
 
     # Boundary Conditions structure
@@ -369,8 +377,8 @@ if __name__ == "__main__":
 
     idxTrain = select_idx(Xdata, Ndata, criterion='lhs')
     XdataTrain, UdataTrain = conform_data(Xdata, Udata, idxTrain)
-    XdataTrain = np.concatenate((XunBC, XupBC, XinBC, XcyBC, XdataTrain))
-    UdataTrain = np.concatenate((UnBC, UpBC, InBC, CyBC, UdataTrain))
+    #XdataTrain = np.concatenate((XunBC, XupBC, XinBC, XcyBC, XdataTrain))
+    #UdataTrain = np.concatenate((UnBC, UpBC, InBC, CyBC, UdataTrain))
     
     ptsF = np.random.uniform([-5, -5], [15, 5], size=(Nfis, 2))  #interior fis points w no data
     X_f = np.c_[ptsF, 0.01*np.random.randint(T-tInit, size=Nfis) ]
