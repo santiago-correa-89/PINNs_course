@@ -40,19 +40,16 @@ class NavierStoke:
         self.xTrain_tf = tf.convert_to_tensor(X_d[:, 0:1], dtype=tf.float32)
         self.yTrain_tf = tf.convert_to_tensor(X_d[:, 1:2], dtype=tf.float32)
         self.tTrain_tf = tf.convert_to_tensor(X_d[:, 2:3], dtype=tf.float32)
-        self.XdataTrain_tf = tf.convert_to_tensor(X_d, dtype=tf.float32)
         
         #Training data Variables
         self.uTrain = U_d[:, 0:1]
         self.vTrain = U_d[:, 1:2]
         self.pTrain = U_d[:, 2:3]
-        self.UdataTrain = tf.convert_to_tensor(U_d, dtype=tf.float32)
         
         #Physics points for training
         self.xPhisic_tf = tf.convert_to_tensor(X_f[:, 0:1], dtype=tf.float32)
         self.yPhisic_tf = tf.convert_to_tensor(X_f[:, 1:2], dtype=tf.float32)
         self.tPhisic_tf = tf.convert_to_tensor(X_f[:, 2:3], dtype=tf.float32)
-        self.Xphisics_tf = tf.convert_to_tensor(X_f, dtype=tf.float32)
 
         #Boundary points for training
         self.xBound_tf = tf.convert_to_tensor(X_b[:, 0:1], dtype=tf.float32)
@@ -75,7 +72,6 @@ class NavierStoke:
         self.xTest_tf = tf.convert_to_tensor(Xtest[:, 0:1], dtype=tf.float32)
         self.yTest_tf = tf.convert_to_tensor(Xtest[:, 1:2], dtype=tf.float32)
         self.tTest_tf = tf.convert_to_tensor(Xtest[:, 2:3], dtype=tf.float32)
-        self.XTest_tf = tf.convert_to_tensor(Xtest, dtype=tf.float32)
         
         #Test data for training
         self.uTest = Utest[:, 0:1]
@@ -174,10 +170,11 @@ class NavierStoke:
         return W, b
 
     def Initialize_mults(self, N_f, N_b, N_i):
-        lambda_f = tf.Variable(tf.ones([N_f, 1], dtype=tf.float32))
-        lambda_b = tf.Variable(tf.ones([N_b, 1], dtype=tf.float32))
-        lambda_i = tf.Variable(tf.ones([N_i, 1], dtype=tf.float32))
+        lambda_f = tf.Variable(10*tf.ones([N_f, 1], dtype=tf.float32))
+        lambda_b = tf.Variable(10*tf.ones([N_b, 1], dtype=tf.float32))
+        lambda_i = tf.Variable(10*tf.ones([N_i, 1], dtype=tf.float32))
         return lambda_f, lambda_b, lambda_i
+    
     # Neural Network 
     def DNN(self, X, W, b):
         A = 2.0*(X - self.lb)/(self.ub - self.lb) - 1.0   
@@ -241,36 +238,12 @@ class NavierStoke:
         #self.optimizer_adam.build([W, b, lambda_f, lambda_b, lambda_i])
         with tf.GradientTape(persistent=True) as tape4:
             tape4.watch([W, b, lambda_f, lambda_b, lambda_i])
-        
-            with tf.GradientTape(persistent=True) as tape5:
-                tape5.watch([self.xTrain_tf, self.yTrain_tf, self.tTrain_tf])
-                output = self.net_u(self.xTrain_tf, self.yTrain_tf, self.tTrain_tf, W, b)
-                psi = output[:, 0:1]
-                p = output[:, 1:2]
-       
-            u = tape5.gradient(psi, self.yTrain_tf)
-            v = -tape5.gradient(psi, self.xTrain_tf)
-            del tape5
 
-            with tf.GradientTape(persistent=True) as tape6:
-                tape6.watch([self.xBound_tf, self.yBound_tf, self.tBound_tf])
-                output = self.net_u(self.xBound_tf, self.yBound_tf, self.tBound_tf, W, b)
-                psi_B = output[:, 0:1]
-                p_B = output[:, 1:2]
-       
-            u_B = tape6.gradient(psi_B, self.yBound_tf)
-            v_B = -tape6.gradient(psi_B, self.xBound_tf)
-            del tape6
+            u, v, p = self.trainSet(self.xTrain_tf, self.yTrain_tf, self.tTrain_tf, W, b)
 
-            with tf.GradientTape(persistent=True) as tape7:
-                tape7.watch([self.xInit_tf, self.yInit_tf, self.tInit_tf])
-                output = self.net_u(self.xInit_tf, self.yInit_tf, self.tInit_tf, W, b)
-                psi_I = output[:, 0:1]
-                p_I = output[:, 1:2]
-       
-            u_I = tape7.gradient(psi_I, self.yInit_tf)
-            v_I = -tape7.gradient(psi_I, self.xInit_tf)
-            del tape7 
+            u_B, v_B, p_B = self.trainSet(self.xBound_tf, self.yBound_tf, self.tBound_tf, W, b)
+
+            u_I, v_I, p_I = self.trainSet(self.xInit_tf, self.yInit_tf, self.tInit_tf, W, b)
         
             fx, fy = self.net_f(self.xPhisic_tf, self.yPhisic_tf, self.tPhisic_tf, W, b)
             
@@ -305,15 +278,31 @@ class NavierStoke:
     
     def predict(self, xTest, yTest, tTest, W, b):
     
-        with tf.GradientTape(persistent=True) as tape6:
-            tape6.watch([xTest, yTest, tTest])
+        with tf.GradientTape(persistent=True) as tape8:
+            tape8.watch([xTest, yTest, tTest])
             output = self.net_u(xTest, yTest, tTest, W, b)
             psi = output[:,0:1]
             p = output[:,1:2]
        
-        u = tape6.gradient(psi, yTest)
-        v = -tape6.gradient(psi, xTest)
+        u = tape8.gradient(psi, yTest)
+        v = -tape8.gradient(psi, xTest)
+        
+        del tape8
         return u, v, p
+
+    def trainSet(self, xData, yData, tData, W, b):
+        
+        with tf.GradientTape(persistent=True) as tape9:
+            
+            tape9.watch([xData, yData, tData])
+            output = self.net_u(xData, yData, tData, W, b)
+            psi = output[:, 0:1]
+            p = output[:, 1:2]
+       
+        u = tape9.gradient(psi, yData)
+        v = -tape9.gradient(psi, xData)
+        del tape9
+        return u, v, p 
     
 
 if __name__ == "__main__": 
@@ -326,12 +315,12 @@ if __name__ == "__main__":
     Ntest = 200
     Ndata = 40
     Ninit = 1000
-    Nfis = 15000
+    Nfis = 5000
     Ncyl = 10000
-    nIterAdam = 20#000
+    nIterAdam = 20000
     
     T=201
-    tInit = 15 # Initial time
+    tInit = 130 # Initial time
 
     # Defining Neural Network
     layers = [3]+6*[64]+[2]
@@ -380,13 +369,13 @@ if __name__ == "__main__":
     #XdataTrain = np.concatenate((XunBC, XupBC, XinBC, XcyBC, XdataTrain))
     #UdataTrain = np.concatenate((UnBC, UpBC, InBC, CyBC, UdataTrain))
     
-    ptsF = np.random.uniform([-5, -5], [15, 5], size=(Nfis, 2))  #interior fis points w no data
+    ptsF = np.random.uniform([-2, -2], [15, 2], size=(Nfis, 2))  #interior fis points w no data
     X_f = np.c_[ptsF, 0.01*np.random.randint(T-tInit, size=Nfis) ]
     #X_f = np.vstack([X_f, XdataTrain]) #eval fis in data points
 
     lr = 1e-3
     
-    folder = r'src/results/adaptive'
+    folder = r'src/results/adaptive40'
 
     #Set of evaluation points
     x = np.arange(-5, 15.1, 0.1)

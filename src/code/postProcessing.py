@@ -42,7 +42,7 @@ def Processing(x, y, t, estimation, loss, lossF, lossU, folder, date):
 
     fig = plt.figure()
     ax = fig.add_subplot(111)
-    ax.plot(lossF, 'r--', lossU, 'k^', loss, 'bs')
+    ax.plot(loss, 'bs')
     ax.set_xlabel('$n iter$')
     ax.set_ylabel('Loss')
     plt.yscale('log')
