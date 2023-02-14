@@ -9,7 +9,7 @@ from pyDOE import lhs
 
 import pickle
 
-TimeStep = 0.01
+TimeStep = 1
 ############ animation and visualization ###########
 def nonuniform_imshow(x, y, z, aspect=1, cmap=plt.cm.rainbow):
   # Create regular grid
