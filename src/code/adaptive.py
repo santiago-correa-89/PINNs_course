@@ -1,5 +1,5 @@
 import tensorflow as tf
-#import tensorflow_probability as tfp
+import tensorflow_probability as tfp
 import numpy as np
 import time
 import datetime
@@ -317,7 +317,7 @@ if __name__ == "__main__":
     Ninit = 1000
     Nfis = 5000
     Ncyl = 10000
-    nIterAdam = 20000
+    nIterAdam = 8000
     
     T=201
     tInit = 130 # Initial time
