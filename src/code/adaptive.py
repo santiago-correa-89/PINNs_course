@@ -1,5 +1,5 @@
 import tensorflow as tf
-#import tensorflow_probability as tfp
+import tensorflow_probability as tfp
 import numpy as np
 import time
 import datetime
@@ -313,11 +313,11 @@ if __name__ == "__main__":
     Re = nu/(Uinf*D)   
     noise = 0.0        
     Ntest = 200
-    Ndata = 40
+    Ndata = 100
     Ninit = 1000
     Nfis = 5000
     Ncyl = 10000
-    nIterAdam = 20000
+    nIterAdam = 8000
     
     T=201
     tInit = 130 # Initial time
@@ -364,7 +364,7 @@ if __name__ == "__main__":
     idxTest = select_idx(Xdata, Ntest, criterion='uni')
     Xtest, Utest = conform_data(Xdata, Udata, idxTest)
 
-    idxTrain = select_idx(Xdata, Ndata, criterion='lhs')
+    idxTrain = select_idx(Xdata, Ndata, criterion='uni')
     XdataTrain, UdataTrain = conform_data(Xdata, Udata, idxTrain)
     #XdataTrain = np.concatenate((XunBC, XupBC, XinBC, XcyBC, XdataTrain))
     #UdataTrain = np.concatenate((UnBC, UpBC, InBC, CyBC, UdataTrain))
@@ -373,9 +373,9 @@ if __name__ == "__main__":
     X_f = np.c_[ptsF, 0.01*np.random.randint(T-tInit, size=Nfis) ]
     #X_f = np.vstack([X_f, XdataTrain]) #eval fis in data points
 
-    lr = 1e-3
+    lr = 5e-4
     
-    folder = r'src/results/adaptive40'
+    folder = r'src/results/adaptive100'
 
     #Set of evaluation points
     x = np.arange(-5, 15.1, 0.1)

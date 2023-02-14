@@ -171,7 +171,7 @@ class NavierStoke:
         L = len(W)
         for i in range(L-1):
             A = tf.tanh(tf.add(tf.matmul(A, W[i]), b[i]))
-        Y = tf.add(tf.matmul(A, W[-1]), b[-1])
+            Y = tf.add(tf.matmul(A, W[-1]), b[-1])
         return Y
 
     def train_vars(self, W, b):
