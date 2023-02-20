@@ -12,9 +12,6 @@ from PIL import Image
 from scipy import spatial
 from pyDOE import lhs
 
-import pickle
-import os
-
 from utilities import *
 from flatWeightsLBFGS import *
 from postProcessing import *
@@ -369,7 +366,7 @@ if __name__ == "__main__":
     Nfis = 5000
     Ncyl = 10000
     nIterAdam  = 8000
-    nIterLBFGS = 8000
+    nIterLBFGS = 32000
     
     T=201
     tInit = 130 # Initial time
@@ -409,7 +406,7 @@ if __name__ == "__main__":
     # Initial Conditions
     idxIni = select_idx(Xdata, Ninit, criterion='uni')
     X_ini = Xdata[idxIni,:]
-    X_ini = np.c_[X_ini, 0.01*np.random.randint(T-tInit, size=Ninit) ]
+    X_ini = np.c_[X_ini, 0.1*np.random.randint(T-tInit, size=Ninit) ]
     U_ini = Udata[idxIni,:,0]
 
     # Select a number of point to test the NN
@@ -422,16 +419,16 @@ if __name__ == "__main__":
     #UdataTrain = np.concatenate((UnBC, UpBC, InBC, CyBC, UdataTrain))
     
     ptsF = np.random.uniform([-2, -2], [15, 2], size=(Nfis, 2))  #interior fis points w no data
-    X_f = np.c_[ptsF, 0.01*np.random.randint(T-tInit, size=Nfis) ]
+    X_f = np.c_[ptsF, 0.1*np.random.randint(T-tInit, size=Nfis) ]
     #X_f = np.vstack([X_f, XdataTrain]) #eval fis in data points
 
     lr = 5e-4
     
-    folder = r'src/results/test2do'
+    folder = r'src/results/2nd_100Samples'
 
     #Set of evaluation points
     x = np.arange(-5, 15.1, 0.1)
     y = np.arange(-5, 5.05, 0.05)
-    t = np.arange(0, (T-tInit)*0.01, 0.01)
+    t = np.arange(0, (T-tInit)*0.1, 0.1)
     
     model = NavierStoke(XdataTrain, UdataTrain, X_f, X_bc, U_bc, X_ini, U_ini, Xtest, Utest, x, y, t, layers, lr, Re, folder, nIterAdam, nIterLBFGS)
