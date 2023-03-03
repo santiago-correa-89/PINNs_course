@@ -5,6 +5,8 @@ import time
 import datetime
 import matplotlib.pyplot as plt
 
+from sklearn.metrics import r2_score
+
 from scipy.interpolate import griddata
 import matplotlib.pyplot as plt
 from PIL import Image 
@@ -158,8 +160,15 @@ class NavierStoke:
         self.errU = (self.uTest - self.uPredict.numpy())
         self.errV = (self.vTest - self.vPredict.numpy())
         self.errP = (self.pTest - self.pPredict.numpy())
-    
         np.save(folder + '/error.npy', [self.errU, self.errV, self.errP])
+
+
+        r2_U = r2_score(self.uTest, self.uPredict.numpy())
+        r2_V = r2_score(self.vTest, self.vPredict.numpy())
+        r2_P = r2_score(self.pTest, self.pPredict.numpy())
+
+        np.save(folder + '/R2.npy', [r2_U, r2_V, r2_P])
+        print("R2 are {:.2f} in u, {:.2f} in v and {:.2f} in p.".format(r2_U, r2_V, r2_P))
     
         self.meanErrU = (np.linalg.norm(self.errU)/np.linalg.norm(self.uTest + 1e-8))*100 
         self.meanErrV = (np.linalg.norm(self.errV)/np.linalg.norm(self.vTest + 1e-8))*100
@@ -175,6 +184,8 @@ class NavierStoke:
         self.Estimation = self.net_u(self.grid_tf[:, 0:1], self.grid_tf[:, 1:2], self.grid_tf[:, 2:3], self.W, self.b)
         
         Processing(xGrid, yGrid, tGrid, self.Estimation, self.loss, self.lossF, self.lossU, folder, self.date)
+
+
     
     # Initalization of Network
     def hyper_initial(self, size):
@@ -190,9 +201,9 @@ class NavierStoke:
         return W, b
 
     def Initialize_mults(self, N_f, N_b, N_i):
-        lambda_f = tf.Variable(10*tf.ones([N_f, 1], dtype=tf.float32))
-        lambda_b = tf.Variable(10*tf.ones([N_b, 1], dtype=tf.float32))
-        lambda_i = tf.Variable(10*tf.ones([N_i, 1], dtype=tf.float32))
+        lambda_f = tf.Variable(100*tf.ones([N_f, 1], dtype=tf.float32))
+        lambda_b = tf.Variable(100*tf.ones([N_b, 1], dtype=tf.float32))
+        lambda_i = tf.Variable(100*tf.ones([N_i, 1], dtype=tf.float32))
         return lambda_f, lambda_b, lambda_i
     
     # Neural Network 
@@ -365,11 +376,12 @@ if __name__ == "__main__":
     Ninit = 1000
     Nfis = 5000
     Ncyl = 10000
-    nIterAdam  = 8000
-    nIterLBFGS = 32000
+    nIterAdam  = 10000
+    nIterLBFGS = 90000
     
+    tStep = 1
     T=201
-    tInit = 130 # Initial time
+    tInit = 150 # Initial time
 
     # Defining Neural Network
     layers = [3]+6*[64]+[2]
@@ -406,7 +418,7 @@ if __name__ == "__main__":
     # Initial Conditions
     idxIni = select_idx(Xdata, Ninit, criterion='uni')
     X_ini = Xdata[idxIni,:]
-    X_ini = np.c_[X_ini, 0.1*np.random.randint(T-tInit, size=Ninit) ]
+    X_ini = np.c_[X_ini, tStep*np.random.randint(T-tInit, size=Ninit) ]
     U_ini = Udata[idxIni,:,0]
 
     # Select a number of point to test the NN
@@ -419,16 +431,16 @@ if __name__ == "__main__":
     #UdataTrain = np.concatenate((UnBC, UpBC, InBC, CyBC, UdataTrain))
     
     ptsF = np.random.uniform([-2, -2], [15, 2], size=(Nfis, 2))  #interior fis points w no data
-    X_f = np.c_[ptsF, 0.1*np.random.randint(T-tInit, size=Nfis) ]
+    X_f = np.c_[ptsF, tStep*np.random.randint(T-tInit, size=Nfis) ]
     #X_f = np.vstack([X_f, XdataTrain]) #eval fis in data points
 
-    lr = 5e-4
+    lr = 1e-3
     
-    folder = r'src/results/2nd_100Samples'
+    folder = r'src/results/2nd_40Samples'
 
     #Set of evaluation points
     x = np.arange(-5, 15.1, 0.1)
     y = np.arange(-5, 5.05, 0.05)
-    t = np.arange(0, (T-tInit)*0.1, 0.1)
+    t = np.arange(0, (T-tInit)*tStep, tStep)
     
     model = NavierStoke(XdataTrain, UdataTrain, X_f, X_bc, U_bc, X_ini, U_ini, Xtest, Utest, x, y, t, layers, lr, Re, folder, nIterAdam, nIterLBFGS)
