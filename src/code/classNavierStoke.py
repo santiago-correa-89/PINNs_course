@@ -266,7 +266,7 @@ class NavierStoke:
             output = self.net_u(self.xTrain_tf, self.yTrain_tf, self.tTrain_tf, W, b)
             psi = output[:, 0:1]
             p = output[:, 1:2]
-       
+            
         u = tape7.gradient(psi, self.yTrain_tf)
         v = -tape7.gradient(psi, self.xTrain_tf)
         del tape7    

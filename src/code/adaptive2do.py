@@ -185,7 +185,7 @@ class NavierStoke:
         
         Processing(xGrid, yGrid, tGrid, self.Estimation, self.loss, self.lossF, self.lossU, folder, self.date)
 
-
+        print('END')
     
     # Initalization of Network
     def hyper_initial(self, size):
@@ -418,7 +418,7 @@ if __name__ == "__main__":
     # Initial Conditions
     idxIni = select_idx(Xdata, Ninit, criterion='uni')
     X_ini = Xdata[idxIni,:]
-    X_ini = np.c_[X_ini, tStep*np.random.randint(T-tInit, size=Ninit) ]
+    X_ini = np.c_[X_ini, np.zeros(Ninit) ]
     U_ini = Udata[idxIni,:,0]
 
     # Select a number of point to test the NN
