@@ -5,7 +5,7 @@ import time
 import datetime
 import matplotlib.pyplot as plt
 
-from sklearn.metrics import r2_score
+from sklearn.metrics import r2_score, mean_squared_error, mean_absolute_error
 
 from scipy.interpolate import griddata
 import matplotlib.pyplot as plt
@@ -60,7 +60,6 @@ class NavierStoke:
         xInit_tf = tf.convert_to_tensor(X_i[:, 0:1], dtype=tf.float32)
         yInit_tf = tf.convert_to_tensor(X_i[:, 1:2], dtype=tf.float32)
         tInit_tf = tf.convert_to_tensor(X_i[:, 2:3], dtype=tf.float32)
-        Xinit_tf = tf.convert_to_tensor(X_i, dtype=tf.float32)
         uInit = U_i[:, 0:1]
         vInit = U_i[:, 1:2]
         pInit = U_i[:, 2:3]
@@ -95,7 +94,7 @@ class NavierStoke:
         # Initialize time and loss variables
         start_time = time.time()
         n=0
-        self.loss = []
+        self.loss  = []
         self.lossU = []
         self.lossF = []
         self.lossB = []
@@ -156,21 +155,19 @@ class NavierStoke:
         # Prediction of NN for test points
         uPredict, vPredict, pPredict = self.predict(xTest_tf, yTest_tf, tTest_tf, W, b, lb, ub)
         
-        # Error estimation for prediction of NN
-        errU = (uTest - uPredict.numpy())
-        errV = (vTest - vPredict.numpy())
-        errP = (pTest - pPredict.numpy())
-        np.save(folder + '/error.npy', [errU, errV, errP])
-    
-        meanErrU = (np.linalg.norm(errU)/np.linalg.norm(uTest + 1e-8))*100 
-        meanErrV = (np.linalg.norm(errV)/np.linalg.norm(vTest + 1e-8))*100
-        meanErrP = (np.linalg.norm(errP)/np.linalg.norm(pTest + 1e-8))*100
+        # Mean Squared Error estimation for prediction of NN
+        mseU = mean_squared_error(uTest, uPredict.numpy())
+        mseP = mean_squared_error(pTest, pPredict.numpy())
+        mseV = mean_squared_error(vTest, vPredict.numpy())
 
-        np.save(folder + '/meanError.npy', [meanErrU, meanErrV, meanErrP])
+        maeU = mean_absolute_error(uTest, uPredict.numpy())
+        maeP = mean_absolute_error(pTest, pPredict.numpy())
+        maeV = mean_absolute_error(vTest, vPredict.numpy())
 
         np.save(folder + '/Xtest.npy', Xtest)
     
-        print("Percentual errors are {:.2f} in u, {:.2f} in v and {:.2f} in p.".format(meanErrU, meanErrV, meanErrP))
+        print("Mean Squared errors are {:.2f} in u, {:.2f} in v and {:.2f} in p.".format(mseU, mseV,mseP))
+        print("Mean Abosulte errors are {:.2f} in u, {:.2f} in v and {:.2f} in p.".format(maeU, maeV,maeP))
 
         #Post processing using a grid to predict the flow variation   
         Estimation = self.net_u(grid_tf[:, 0:1], grid_tf[:, 1:2], grid_tf[:, 2:3], W, b, lb, ub)
@@ -366,18 +363,17 @@ if __name__ == "__main__":
     # Time variables
     tStep = 0.1
     T=201
-    tInit = 100 # Initial time
+    tInit = 151 # Initial time
 
     # Data evaluation points      
-    Ntest = 200
+    Ntest = 500
     Ndata = 100
-    Ninit = 1000
-    Nfis  = 5000
+    Nfis  = 10000
     Ncyl  = 10000
 
     # Iteration steps per method
-    nIterAdam  = 20000
-    nIterLBFGS = 80000
+    nIterAdam  = 10000
+    nIterLBFGS = 50000
     
     # Defining Neural Network
     layers = [3]+6*[64]+[2]
@@ -416,28 +412,33 @@ if __name__ == "__main__":
     U_bc = np.concatenate((UnBC, InBC, ouBC, UpBC, CyBC), axis=0, out=None) 
 
     # Initial Conditions
-    idxIni = select_idx(Xdata, Ninit, criterion='uni')
-    X_ini = Xdata[idxIni,:]
-    X_ini = np.c_[X_ini, np.zeros(Ninit) ]
-    U_ini = Udata[idxIni,:,0]
+    # idxIni = select_idx(Xdata, Ninit, criterion='uni')
+    X_ini = Xdata
+    X_ini = np.c_[X_ini, np.zeros(X_ini.shape[0])]
+    U_ini = Udata[:X_ini.shape[0],:,0]
+    Ninit = X_ini.shape[0]
 
     # Select a number of point to test the NN
-    idxTest = select_idx(Xdata, Ntest, criterion='uni')
+    idxTest = select_idx(Xdata, Ntest, criterion='fem')
     Xtest, Utest = conform_data(Xdata, Udata, idxTest)
+    u_min_threshold = 0.001
+    valid_indices = (Utest > u_min_threshold).all(axis=1)
+    Xtest = Xtest[valid_indices]
+    Utest = Utest[valid_indices]
+    # Xtest = Xtest[(Utest[:,0]>0.01)*(Utest[:,1]>0.01)*(Utest[:,2]>0.01)] # Filter to avoide data (u, v, p) near zero
+    # Utest = Utest[(Utest[:,0]>0.01)*(Utest[:,1]>0.01)*(Utest[:,2]>0.01)] # Filter to avoide data (u, v, p) near zero
 
     # Select training points of point to test the NN
-    idxTrain = select_idx(Xdata, Ndata, criterion='uni')
+    idxTrain = select_idx(Xdata, Ndata, criterion='fem')
     XdataTrain, UdataTrain = conform_data(Xdata, Udata, idxTrain)
-    #XdataTrain = np.concatenate((XunBC, XupBC, XinBC, XcyBC, XdataTrain))
-    #UdataTrain = np.concatenate((UnBC, UpBC, InBC, CyBC, UdataTrain))
     
-    ptsF = np.random.uniform([-2, -2], [15, 2], size=(Nfis, 2))  #interior fis points w no data
+    ptsF = np.random.uniform([-5, -5], [15, 5], size=(Nfis, 2))  #interior fis points w no data
     X_f = np.c_[ptsF, tStep*np.random.randint(T-tInit, size=Nfis) ]
     #X_f = np.vstack([X_f, XdataTrain]) #eval fis in data points
 
     lr = 1e-3
     
-    folder = r'src/results/test1'
+    folder = r'src/results/test'
 
     #Set of evaluation points
     x = np.arange(-5, 15.1, 0.1)
