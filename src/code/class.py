@@ -367,7 +367,7 @@ if __name__ == "__main__":
 
     # Data evaluation points      
     Ntest = 500
-    Ndata = 100
+    Ndata = 40
     Nfis  = 10000
     Ncyl  = 10000
 
@@ -438,7 +438,7 @@ if __name__ == "__main__":
 
     lr = 1e-3
     
-    folder = r'src/results/test'
+    folder = r'src/results/testleo40'
 
     #Set of evaluation points
     x = np.arange(-5, 15.1, 0.1)
