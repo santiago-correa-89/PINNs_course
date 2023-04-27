@@ -122,7 +122,7 @@ class NavierStoke:
         #Optimization process with LBFGS
         optimizer = tfp.optimizer.lbfgs_minimize(loss_and_gradient, initial_position=initial_weights,
         num_correction_pairs=100,
-        tolerance=1e-8,
+        tolerance=0,
         x_tolerance=0,
         f_relative_tolerance=0,
         max_iterations=nIterLBFGS,
@@ -438,7 +438,7 @@ if __name__ == "__main__":
 
     lr = 1e-3
     
-    folder = r'src/results/testleo40'
+    folder = r'src/results/testleo30notol'
 
     #Set of evaluation points
     x = np.arange(-5, 15.1, 0.1)
