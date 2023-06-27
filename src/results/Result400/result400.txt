@@ -1,0 +1,3 @@
+Training time: 225980.6950
+Mean Squared errors are 0.02 in u, 0.03 in v and 0.00 in p.
+Mean Abosulte errors are 0.07 in u, 0.09 in v and 0.02 in p.

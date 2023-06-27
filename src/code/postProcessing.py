@@ -12,6 +12,10 @@ def Processing(x, y, t, estimation, loss, lossF, lossU, folder, date):
     phi = estimation[:, 0:1].numpy()
     p = estimation[:, 1:2].numpy()
 
+    #u = estimation[:, 0:1].numpy()
+    #v = estimation[:, 1:2].numpy()
+    #p = estimation[:, 1:2].numpy()
+
     for k in range(t.shape[0]):
     
         timeEvalMin = k*x.shape[0]*y.shape[0]
@@ -27,11 +31,13 @@ def Processing(x, y, t, estimation, loss, lossF, lossU, folder, date):
         plt.close()
     
         fig, ax = plt.subplots()  
+        #hm = ax.imshow(u[timeEvalMin:timeEvalMax].reshape((x.shape[0],y.shape[0])).T, extent=[x.min(), x.max(), y.min(), y.max()])
         hm = ax.imshow(u.T, extent=[x.min(), x.max(), y.min(), y.max()])
         animation(hm, folder + '/uEstimation/u', k, 'U Field') 
         plt.close()
         
         fig, ax = plt.subplots()  
+        #hm = ax.imshow(v[timeEvalMin:timeEvalMax].reshape((x.shape[0],y.shape[0])).T, extent=[x.min(), x.max(), y.min(), y.max()])
         hm = ax.imshow(v.T, extent=[x.min(), x.max(), y.min(), y.max()])
         animation(hm, folder + '/vEstimation/v', k, 'V Field') 
         plt.close()
