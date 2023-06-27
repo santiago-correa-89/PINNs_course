@@ -156,16 +156,16 @@ class NavierStoke:
         uPredict, vPredict, pPredict = self.predict(xTest_tf, yTest_tf, tTest_tf, W, b, lb, ub)
         
         # Mean Squared Error estimation for prediction of NN
-        mseU = mean_squared_error(uTest, uPredict.numpy())
-        mseP = mean_squared_error(pTest, pPredict.numpy())
-        mseV = mean_squared_error(vTest, vPredict.numpy())
+        mseU = np.mean(np.square(uPredict.numpy() - uTest))
+        mseP = np.mean(np.square(pPredict.numpy() - pTest))
+        mseV = np.mean(np.square(vPredict.numpy() - vTest))
 
-        maeU = mean_absolute_error(uTest, uPredict.numpy())
-        maeP = mean_absolute_error(pTest, pPredict.numpy())
-        maeV = mean_absolute_error(vTest, vPredict.numpy())
+        maeU = np.mean(np.abs(uPredict.numpy() - uTest))
+        maeP = np.mean(np.abs(pPredict.numpy() - pTest))
+        maeV = np.mean(np.abs(vPredict.numpy() - vTest))
 
         np.save(folder + '/Xtest.npy', Xtest)
-    
+
         print("Mean Squared errors are {:.2f} in u, {:.2f} in v and {:.2f} in p.".format(mseU, mseV,mseP))
         print("Mean Abosulte errors are {:.2f} in u, {:.2f} in v and {:.2f} in p.".format(maeU, maeV,maeP))
 
@@ -190,9 +190,9 @@ class NavierStoke:
         return W, b
 
     def Initialize_mults(self, N_f, N_b, N_i):
-        lambda_f = tf.Variable(100*tf.ones([N_f, 1], dtype=tf.float32))
-        lambda_b = tf.Variable(100*tf.ones([N_b, 1], dtype=tf.float32))
-        lambda_i = tf.Variable(100*tf.ones([N_i, 1], dtype=tf.float32))
+        lambda_f = tf.Variable(5000*tf.ones([N_f, 1], dtype=tf.float32))
+        lambda_b = tf.Variable(5000*tf.ones([N_b, 1], dtype=tf.float32))
+        lambda_i = tf.Variable(5000*tf.ones([N_i, 1], dtype=tf.float32))
         return lambda_f, lambda_b, lambda_i
     
     # Neural Network 
@@ -363,17 +363,17 @@ if __name__ == "__main__":
     # Time variables
     tStep = 0.1
     T=201
-    tInit = 151 # Initial time
+    tInit = 171 # Initial time
 
     # Data evaluation points      
-    Ntest = 500
-    Ndata = 40
+    Ntest = 1000
+    Ndata = 400
     Nfis  = 10000
     Ncyl  = 10000
 
     # Iteration steps per method
     nIterAdam  = 10000
-    nIterLBFGS = 50000
+    nIterLBFGS = 40000
     
     # Defining Neural Network
     layers = [3]+6*[64]+[2]
@@ -438,7 +438,7 @@ if __name__ == "__main__":
 
     lr = 1e-3
     
-    folder = r'src/results/testleo30notol'
+    folder = r'src/results/Result1000'
 
     #Set of evaluation points
     x = np.arange(-5, 15.1, 0.1)
