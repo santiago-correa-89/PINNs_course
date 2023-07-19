@@ -358,7 +358,7 @@ if __name__ == "__main__":
     nu = 0.01
     Uinf = 1
     Re = nu/(Uinf*D)   
-    noise = 0.1 
+    noise = 0.5 
 
     # Time variables
     tStep = 0.1
@@ -367,7 +367,7 @@ if __name__ == "__main__":
 
     # Data evaluation points      
     Ntest = 500
-    Ndata = 1000
+    Ndata = 400
     Nfis  = 10000
     Ncyl  = 10000
 
@@ -419,7 +419,7 @@ if __name__ == "__main__":
     Ninit = X_ini.shape[0]
 
     # Select a number of point to test the NN
-    idxTest = select_idx(Xdata, Ntest, criterion='fem')
+    idxTest = select_idx(Xdata, Ntest, criterion='lhs')
     Xtest, Utest = conform_data(Xdata, Udata, idxTest)
     u_min_threshold = 0.001
     valid_indices = (Utest > u_min_threshold).all(axis=1)
@@ -429,7 +429,7 @@ if __name__ == "__main__":
     # Utest = Utest[(Utest[:,0]>0.01)*(Utest[:,1]>0.01)*(Utest[:,2]>0.01)] # Filter to avoide data (u, v, p) near zero
 
     # Select training points of point to test the NN
-    idxTrain = select_idx(Xdata, Ndata, criterion='fem')
+    idxTrain = select_idx(Xdata, Ndata, criterion='lhs')
     XdataTrain, UdataTrain = conform_data(Xdata, Udata, idxTrain)
     UdataTrain = UdataTrain + noise*np.random.randn(UdataTrain[:,0:1].shape[0], 4)
     
@@ -439,7 +439,7 @@ if __name__ == "__main__":
 
     lr = 1e-3
     
-    folder = r'src/results/ResultNoise400'
+    folder = r'src/results/ResultNoise400_5'
 
     #Set of evaluation points
     x = np.arange(-5, 15.1, 0.1)
